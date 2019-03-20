@@ -17,6 +17,7 @@ def predict(dictModels, df2):
 
     predictions = predictions.tolist()
     predictions = [0 if i < 0 else i for i in predictions]
+    predictions = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in predictions]
     data = {
       "menu"        : column,
       "predictions" : predictions,
@@ -30,8 +31,7 @@ def predict(dictModels, df2):
   return jsonData
 
 def forecast(dictModels, df2):
-  # listResult = []
-  data = {}
+  listResult = []
   for column in df2:
     modelName = dictModels[column]
     model = pickle.load(open('models/'+modelName,'rb'))
@@ -40,14 +40,14 @@ def forecast(dictModels, df2):
     predictions = predictions.tolist()
     predictions = [0 if i < 0 else i for i in predictions]
     predictions = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in predictions]
-    data[column] = predictions
-    # {
-    #   column : predictions
-    #   # "menu"        : column,
-    # }
-    # listResult.append(data)
-  # allData = {
-  #   "data" : data
-  # }
-  jsonData = json.dumps(data)
+    # data[column] = predictions
+    data = {
+      "menu"        : column,
+      "predictions" : predictions
+    }
+    listResult.append(data)
+  allData = {
+    "data" : listResult
+  }
+  jsonData = json.dumps(allData)
   return jsonData

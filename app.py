@@ -31,17 +31,18 @@ dictModels = pickle.load(open('models/dictModels.pkl','rb'))
 class Predictive(Resource):
     def get(self):
         data = pr.forecast(dictModels, df)
+        # data = pr.predict(dictModels, df)
         data = json.loads(data)
-        return jsonify(data)
-
-class PredictiveOne(Resource):
-    def get(self, menu):
-        data = pr.forecast(dictModels, df)
-        data = json.loads(data)
-        return jsonify(data[menu])
+        
+        try:
+            arg1 = request.args["menu"]
+            results = [d for d in data["data"] if arg1 in d['menu'] ]
+            print(type(results))
+            return jsonify(results)
+        except:
+            return jsonify(data)
 
 api.add_resource(Predictive, '/api/predictive')
-api.add_resource(PredictiveOne, '/api/predictive/<menu>')
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True)
