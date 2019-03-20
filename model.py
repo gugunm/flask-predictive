@@ -16,8 +16,13 @@ import pickle
 import math
 import json
 
-def showDf(df):
-  print(df)
+def getPrice(pathData):
+  df = pd.read_csv(pathData)
+  df = df[['Menu Name', 'Price']]
+  df = df.drop_duplicates(keep='first')
+  df = df[df['Price'] > 0]
+  df = df.set_index('Menu Name')
+  return df
 
 def readData(pathData):
     df = pd.read_csv(pathData)
@@ -130,16 +135,16 @@ def arimaModel(df2):
   return models
 
 def proccessData(pathData):
-    warnings.filterwarnings('ignore')
-    df = readData(pathData)
-    df = coutMenu(df)
-    df2 = transformDf(df)
-    return df2
+  warnings.filterwarnings('ignore')
+  df = readData(pathData)
+  df = coutMenu(df)
+  df2 = transformDf(df)
+  return df2
 
-def modeling(df):
-    # warnings.filterwarnings('ignore')
-    # df = readData(pathData)
-    # df = coutMenu(df)
-    # df2 = transformDf(df)
-    model = arimaModel(df)
-    pickle.dump(model, open('model.pkl','wb'))
+# def proccessRevenue(pathData):
+#   warnings.filterwarnings('ignore')
+#   dPrice = getPrice(pathData)
+#   # df = readData(pathData)
+#   # df = coutMenu(df)
+#   # df2 = transformDf(df) # keadaan tablenya di transform lagi
+#   return dPrice

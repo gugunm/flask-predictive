@@ -1,12 +1,13 @@
 from sklearn.metrics import mean_squared_error
 from math import sqrt
 import pandas as pd
+import numpy as np
 import pickle
 import json
 import math
 import os
 
-def predict(dictModels, df2):
+def predict(dictModels, df2, dPrice):
   listResult = []
   for column in df2:
     modelName = dictModels[column]
@@ -31,26 +32,45 @@ def predict(dictModels, df2):
   jsonData = json.dumps(allData)
   return jsonData
 
-def forecast(dictModels, df2):
+def forecast(dictModels, df2, dPrice):
   listResult = []
+  allPrediction = []
   for column in df2:
     modelName = dictModels[column]
     model = pickle.load(open('models/'+modelName,'rb'))
     predictions = model.forecast(7)
+    try:
+      priceProduct = dPrice.loc[column, 'Price']
+    except:
+      priceProduct = 0
 
     predictions = predictions.tolist()
     predictions = [0 if i < 0 else i for i in predictions]
     predictions = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in predictions]
     data = {
       "menu"        : column,
-      "predictions" : predictions
+      "predictions" : predictions,
+      "price"       : int(priceProduct),
+      "productRevenue"  : int(sum(predictions)*int(priceProduct))
     }
+
     listResult.append(data)
-  allData = {
+    allPrediction.append(predictions)
+
+  allPrediction = sum(map(np.array, allPrediction))
+
+  alldata = {
+    "menu" : "ALL",
+    "predictions" : allPrediction.tolist()
+  }
+
+  filterdata = {
     "data" : listResult
   }
-  jsonData = json.dumps(allData)
-  return jsonData
+
+  jsonfilter = json.dumps(filterdata)
+  jsonall = json.dumps(alldata)
+  return jsonfilter, jsonall
 
 def totalsales(p):
   df = pd.DataFrame(p["data"]).set_index('menu')
@@ -74,5 +94,15 @@ def daySales(p):
   data = {}
   for i, n in enumerate(listSales):
     data[i] = n
+  jsonData = json.dumps(data)
+  return jsonData
+
+def totalrevenue(p):
+  totalRevenue = 0
+  for i in p["data"]:
+    totalRevenue += i["totalPrice"]
+  data = {
+    "totalRevenue" : int(totalRevenue)
+  }
   jsonData = json.dumps(data)
   return jsonData

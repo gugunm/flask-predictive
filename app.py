@@ -15,6 +15,7 @@ api = Api(app)
 
 pathData = 'data/dataset.csv'
 df = md.proccessData(pathData)
+dPrice = md.getPrice(pathData)
 
 listModels = os.listdir('models/') 
 
@@ -27,22 +28,26 @@ elif (listModels[0][:10] != str(date.today())):
     md.arimaModel(df) 
 
 dictModels = pickle.load(open('models/dictModels.pkl','rb'))
-predictions = pr.forecast(dictModels, df)
+predictions, dataAll = pr.forecast(dictModels, df, dPrice)
 data = json.loads(predictions)
 
 class Sales(Resource):
     def get(self):
         # data = pr.forecast(dictModels, df)
         # data = pr.predict(dictModels, df)
-        # data = json.loads(predictions)
-        
+        data1 = json.loads(dataAll)
         try:
-            arg1 = request.args["menu"]
-            # results = [d for d in data["data"] if arg1 in d['menu'] ]
-            results = [d for d in data["data"] if d['menu'] == arg1 ]
-            return jsonify(results[0])
+            if not request.args["menu"]:
+                return jsonify({})
+            elif request.args["menu"]:
+                arg1 = request.args["menu"]
+                # results = [d for d in data["data"] if arg1 in d['menu'] ]
+                results = [d for d in data["data"] if d['menu'] == arg1 ]
+                if not results:
+                    return jsonify({})
+                return jsonify(results[0])
         except:
-            return jsonify(data["data"])
+            return jsonify(data1)
 
 class TotalSales(Resource):
     def get(self):
@@ -56,9 +61,16 @@ class DaySales(Resource):
         data3 = json.loads(daySales)
         return jsonify(data3)
 
+class TotalRevenue(Resource):
+    def get(self):
+        totalRevenue = pr.totalrevenue(data)
+        data4 = json.loads(totalRevenue)
+        return jsonify(data4)
+
 api.add_resource(Sales, '/api/sales')
 api.add_resource(TotalSales, '/api/totalSales')
 api.add_resource(DaySales, '/api/daySales')
+api.add_resource(TotalRevenue, '/api/totalRevenue')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
