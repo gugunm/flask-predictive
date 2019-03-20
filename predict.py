@@ -1,5 +1,6 @@
 from sklearn.metrics import mean_squared_error
 from math import sqrt
+import pandas as pd
 import pickle
 import json
 import math
@@ -40,7 +41,6 @@ def forecast(dictModels, df2):
     predictions = predictions.tolist()
     predictions = [0 if i < 0 else i for i in predictions]
     predictions = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in predictions]
-    # data[column] = predictions
     data = {
       "menu"        : column,
       "predictions" : predictions
@@ -50,4 +50,29 @@ def forecast(dictModels, df2):
     "data" : listResult
   }
   jsonData = json.dumps(allData)
+  return jsonData
+
+def totalsales(p):
+  df = pd.DataFrame(p["data"]).set_index('menu')
+  total = 0
+  for index, row in df.iterrows():
+    total += sum(row.values.tolist()[0])
+  # print(total)
+  data = {
+    "totalSales" : int(total)
+  }
+  jsonData = json.dumps(data)
+  return jsonData
+
+def daySales(p):
+  df = pd.DataFrame(p["data"]).set_index('menu')
+  listSales = []
+  for index, row in df.iterrows():
+    listSales.append(row.values.tolist()[0])
+  listSales = [ sum(row[i] for row in listSales) for i in range(len(listSales[0])) ]
+  # print(listSales)
+  data = {}
+  for i, n in enumerate(listSales):
+    data[i] = n
+  jsonData = json.dumps(data)
   return jsonData

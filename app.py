@@ -27,22 +27,38 @@ elif (listModels[0][:10] != str(date.today())):
     md.arimaModel(df) 
 
 dictModels = pickle.load(open('models/dictModels.pkl','rb'))
+predictions = pr.forecast(dictModels, df)
+data = json.loads(predictions)
 
-class Predictive(Resource):
+class Sales(Resource):
     def get(self):
-        data = pr.forecast(dictModels, df)
+        # data = pr.forecast(dictModels, df)
         # data = pr.predict(dictModels, df)
-        data = json.loads(data)
+        # data = json.loads(predictions)
         
         try:
             arg1 = request.args["menu"]
-            results = [d for d in data["data"] if arg1 in d['menu'] ]
-            print(type(results))
-            return jsonify(results)
+            # results = [d for d in data["data"] if arg1 in d['menu'] ]
+            results = [d for d in data["data"] if d['menu'] == arg1 ]
+            return jsonify(results[0])
         except:
-            return jsonify(data)
+            return jsonify(data["data"])
 
-api.add_resource(Predictive, '/api/predictive')
+class TotalSales(Resource):
+    def get(self):
+        total = pr.totalsales(data)
+        data2 = json.loads(total)
+        return jsonify(data2)
+
+class DaySales(Resource):
+    def get(self):
+        daySales = pr.daySales(data)
+        data3 = json.loads(daySales)
+        return jsonify(data3)
+
+api.add_resource(Sales, '/api/sales')
+api.add_resource(TotalSales, '/api/totalSales')
+api.add_resource(DaySales, '/api/daySales')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
