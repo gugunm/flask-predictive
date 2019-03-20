@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 from flask_restful import Resource, Api
 from datetime import date, timedelta
+import json
 import predict as pr
 import model as md
 import requests
 import pickle
-import json
 import glob
 import os
 from pandas import DataFrame
