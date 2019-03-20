@@ -100,7 +100,7 @@ def daySales(p):
 def totalrevenue(p):
   totalRevenue = 0
   for i in p["data"]:
-    totalRevenue += i["totalPrice"]
+    totalRevenue += i["productRevenue"]
   data = {
     "totalRevenue" : int(totalRevenue)
   }
