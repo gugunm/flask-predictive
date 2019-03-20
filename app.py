@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 from flask_restful import Resource, Api
 from datetime import date, timedelta
+import json
 import predict as pr
 import model as md
 import requests
 import pickle
-import json
 import glob
 import os
 from pandas import DataFrame
@@ -45,4 +45,4 @@ class Predictive(Resource):
 api.add_resource(Predictive, '/api/predictive')
 
 if __name__ == '__main__':
-    app.run(port=8000, debug=True)
+    app.run(debug=True, host='0.0.0.0')

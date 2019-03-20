@@ -1,0 +1,44 @@
+pipelines:
+  default:
+  - step:
+      name: Build
+      services:
+      - docker
+      script:
+      - echo "$GOOGLE_KEY" > key.json
+      - export TEST_IMAGE=asia.gcr.io/arkana-210511/predictive-analytics:$BITBUCKET_BRANCH
+      - docker login -u _json_key --password-stdin https://gcr.io < key.json
+      - docker login -u _json_key --password-stdin https://asia.gcr.io < key.json
+      - docker build -t $TEST_IMAGE .
+      - docker push $TEST_IMAGE
+
+  branches:
+    # production branch
+    master:
+    - step:
+        name: Build
+        services:
+        - docker
+        script:
+        - echo "$GOOGLE_KEY" > key.json
+        - export STABLE_IMAGE=asia.gcr.io/arkana-210511/predictive-analytics:latest
+        - docker login -u _json_key --password-stdin https://gcr.io < key.json
+        - docker login -u _json_key --password-stdin https://asia.gcr.io < key.json
+        - docker build -t $STABLE_IMAGE .
+        - docker push $STABLE_IMAGE
+    - step:
+        name: Deploy
+        image: google/cloud-sdk
+        deployment: production
+        script:
+        - echo "$GOOGLE_KEY" > key.json
+        - gcloud auth activate-service-account --key-file key.json
+        - gcloud config set compute/zone asia-southeast1-a
+        - gcloud config set project arkana-210511
+        - gcloud container clusters get-credentials arkana-internal
+        - kubectl delete pod -l app=predictive-analytics -l ai.arkana.service=predictive-analytics
+
+definitions:
+  services:
+    docker:
+      memory: 3072
