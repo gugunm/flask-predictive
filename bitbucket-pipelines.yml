@@ -24,8 +24,8 @@ pipelines:
         - export STABLE_IMAGE=asia.gcr.io/arkana-210511/predictive-analytics:latest
         - docker login -u _json_key --password-stdin https://gcr.io < key.json
         - docker login -u _json_key --password-stdin https://asia.gcr.io < key.json
-        - docker build -t $TEST_IMAGE .
-        - docker push $TEST_IMAGE
+        - docker build -t $STABLE_IMAGE .
+        - docker push $STABLE_IMAGE
     - step:
         name: Deploy
         image: google/cloud-sdk
