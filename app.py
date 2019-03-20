@@ -28,13 +28,20 @@ elif (listModels[0][:10] != str(date.today())):
 
 dictModels = pickle.load(open('models/dictModels.pkl','rb'))
 
-class Kokkuramen(Resource):
+class Predictive(Resource):
     def get(self):
         data = pr.forecast(dictModels, df)
         data = json.loads(data)
         return jsonify(data)
 
-api.add_resource(Kokkuramen, '/api/kokkuramen')
+class PredictiveOne(Resource):
+    def get(self, menu):
+        data = pr.forecast(dictModels, df)
+        data = json.loads(data)
+        return jsonify(data[menu])
+
+api.add_resource(Predictive, '/api/predictive')
+api.add_resource(PredictiveOne, '/api/predictive/<menu>')
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True)
