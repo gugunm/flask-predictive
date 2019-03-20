@@ -44,4 +44,4 @@ api.add_resource(Predictive, '/api/predictive')
 api.add_resource(PredictiveOne, '/api/predictive/<menu>')
 
 if __name__ == '__main__':
-    app.run(port=8000, debug=True)
+    app.run(debug=True, host='0.0.0.0')
