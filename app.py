@@ -55,21 +55,14 @@ class TotalSales(Resource):
         data2 = json.loads(total)
         return jsonify(data2)
 
-class DaySales(Resource):
-    def get(self):
-        daySales = pr.daySales(data)
-        data3 = json.loads(daySales)
-        return jsonify(data3)
-
 class TotalRevenue(Resource):
     def get(self):
         totalRevenue = pr.totalrevenue(data)
-        data4 = json.loads(totalRevenue)
-        return jsonify(data4)
+        data3 = json.loads(totalRevenue)
+        return jsonify(data3)
 
 api.add_resource(Sales, '/api/sales')
 api.add_resource(TotalSales, '/api/totalSales')
-api.add_resource(DaySales, '/api/daySales')
 api.add_resource(TotalRevenue, '/api/totalRevenue')
 
 if __name__ == '__main__':
