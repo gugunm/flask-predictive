@@ -1,16 +1,9 @@
-from statsmodels.tsa.arima_model import ARIMA
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-from sklearn import metrics  
-from pandas import datetime
 from datetime import date
 from math import sqrt
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
-import itertools
-import warnings
 import dateutil
 import pickle
 import math
@@ -25,12 +18,12 @@ def getPrice(pathData):
   return df
 
 def readData(pathData):
-    df = pd.read_csv(pathData)
-    df = df.iloc[:,:4]
-    df = df.fillna(method='ffill')
-    df['Date'] = df['Date'].apply(dateutil.parser.parse).dt.date
-    df = df.iloc[:,:-1]
-    return df
+  df = pd.read_csv(pathData)
+  df = df.iloc[:,:4]
+  df = df.fillna(method='ffill')
+  df['Date'] = df['Date'].apply(dateutil.parser.parse).dt.date
+  df = df.iloc[:,:-1]
+  return df
 
 def coutMenu(df):
   uniqueDate = df['Date'].unique()
@@ -78,73 +71,103 @@ def transformDf(df):
 
   return df2.T
 
-def min_pdq(train, pdq):
-  params = {}
-  for param in pdq:
+def arimaModel(df2, dPrice):
+  listResult = []
+  allPrediction = []
+  for column in df2:
+    sales_diff = df2[column].diff(periods=1)  # integreted order 1
+    sales_diff = sales_diff[1:]
+    
+    train = df2[column].values
+
+    # ========= S A R I M A X ============
+    mod = sm.tsa.statespace.SARIMAX(
+      train, 
+      order=(0,1,1), # 0,1,0
+      seasonal_order=(0,1,0,7), # 1,1,0,7
+      enforce_stationarity=False,
+      enforce_invertibility=False,
+      trend='c')
+    model_fit = mod.fit(disp=0)
+    # ====================================
+
+    prediction = model_fit.forecast(7)
     try:
-      model_arima = ARIMA(train, order=param)
-      model_arima_fit = model_arima.fit()
-      if param not in params and model_arima_fit.aic:
-        params[param] = model_arima_fit.aic
+      priceProduct = dPrice.loc[column, 'Price']
     except:
-      continue
-      
-  try:
-    minimum_pdq = min(params, key=params.get)
-  except:
-    minimum_pdq = (0,0,0)
+      priceProduct = 0
 
-  return minimum_pdq
+    prediction = prediction.tolist()
+    prediction = [0 if i < 0 else i for i in prediction]
+    prediction = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in prediction]
+    data = {
+      "menu"        : column,
+      "predictions" : prediction,
+      "price"       : int(priceProduct),
+      "productRevenue"  : int(sum(prediction)*int(priceProduct))
+    }
 
-def arimaModel(df2):
-  models = {}
-  # df2 = df.copy()
-  # df2 = df2.T
-  # df2 = df2.iloc[:,:3]
+    listResult.append(data)
+    allPrediction.append(prediction)
 
+  allPrediction = sum(map(np.array, allPrediction))
+  alldata = {
+    "menu" : "ALL",
+    "predictions" : allPrediction.tolist()
+  }
+  filterdata = {
+    "data" : listResult
+  }
+
+  fileName2 = 'models/'+str(date.today())+'dictAll'+'.pkl'
+  fileName1 = 'models/'+str(date.today())+'dictFilter'+'.pkl'
+  pickle.dump(filterdata, open(fileName1,'wb'))
+  pickle.dump(alldata, open(fileName2,'wb'))
+
+  return fileName1, fileName2
+
+def arimaPredict(df): 
+  models = [] 
+  df2 = df.iloc[:len(df.index)-7 , :]
   for column in df2:
     # print('No. Product : ', column)
     sales_diff = df2[column].diff(periods=1)  # integreted order 1
     sales_diff = sales_diff[1:]
     
-    X = df2[column].values
-    train = X[0:len(df2[column].values)-7]
-    
-    # ========= A R I M A ==========
-    # p=d=q=range(0,5)
-    # pdq = list(itertools.product(p,d,q))
-    # use_pdq = min_pdq(train, pdq)
-    # print(use_pdq)
-    # ==============================
+    train = df2[column].values
+    # train = X[0:len(df2[column].values)-7]
 
     # ========= S A R I M A X ============
-    mod = sm.tsa.statespace.SARIMAX(
+    mod = sm.tsa.statespace.SARIMAX( 
       train, 
-      order=(0,0,0), # 0,1,0
-      seasonal_order=(1,1,0,7), # 1,1,0,7
+      order=(0,1,1), # 0,1,0 
+      seasonal_order=(0,1,0,7), # 1,1,0,7 
       enforce_stationarity=False,
       enforce_invertibility=False,
-      trend='ct')
+      trend='c')
     model_fit = mod.fit(disp=0)
     # ====================================
 
-    fileName = str(date.today())+'('+column+')'+'.pkl'
-    pickle.dump(model_fit, open('models/'+fileName,'wb'))
-    models[column] = fileName
-  pickle.dump(models, open('models/dictModels.pkl','wb'))
-  return models
+    prediction = model_fit.predict(start=len(df[column].values)-7, end=len(df[column].values)-1) 
+    rmse = sqrt(mean_squared_error(df[column][len(df[column].values)-7:].values, prediction))
+    if math.isinf(rmse):
+      rmse = 0
+
+    prediction = prediction.tolist()
+    prediction = [0 if i < 0 else i for i in prediction]
+    prediction = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in prediction]
+    data = {
+      "menu"        : column,
+      "prediction"  : prediction,
+      "rmse"        : rmse
+    }
+    models.append(data)
+  fileName = 'models/'+str(date.today())+'dictPredict'+'.pkl'
+  pickle.dump(models, open(fileName,'wb'))
+  return fileName
 
 def proccessData(pathData):
-  warnings.filterwarnings('ignore')
   df = readData(pathData)
   df = coutMenu(df)
   df2 = transformDf(df)
   return df2
-
-# def proccessRevenue(pathData):
-#   warnings.filterwarnings('ignore')
-#   dPrice = getPrice(pathData)
-#   # df = readData(pathData)
-#   # df = coutMenu(df)
-#   # df2 = transformDf(df) # keadaan tablenya di transform lagi
-#   return dPrice

@@ -3,3 +3,4 @@ try-api/
 __pycache__/
 static/
 templates/
+data/
