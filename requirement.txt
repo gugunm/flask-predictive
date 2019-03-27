@@ -33,3 +33,4 @@ wrapt==1.11.1
 flask_restful
 statsmodels
 requests
+psycopg2

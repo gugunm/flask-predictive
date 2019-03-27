@@ -10,68 +10,54 @@ import math
 import glob
 import json
 import os
-
-def getPrice(pathData):
-  df = pd.read_csv(pathData)
-  df = df[['Menu Name', 'Price']]
-  df = df.drop_duplicates(keep='first')
-  df = df[df['Price'] > 0]
-  df = df.set_index('Menu Name')
-  return df
-
-def readData(pathData):
-  df = pd.read_csv(pathData)
-  df = df.iloc[:,:4]
-  df = df.fillna(method='ffill')
-  df['Date'] = df['Date'].apply(dateutil.parser.parse).dt.date
-  df = df.iloc[:,:-1]
-  return df
+import fetchData as fd
 
 def coutMenu(df):
-  arr_date = df['Date'].unique().tolist()
-
+  arr_date = df['date'].unique().tolist()
   for i, dt in enumerate(arr_date):
-    dt2 = df[df['Date'] == dt]
-    dt2 = dt2.iloc[:,1:2]  
-    dt2 = dt2['Menu Name'].value_counts()
-
-    dfDate = pd.DataFrame(dt, index=range(len(dt2.values)), columns=range(1))
+    dt2 = df[df['date'] == dt]
+    dt2 = dt2.iloc[:,1:]  
+    dt2 = dt2.groupby(['productName'])["qty"].apply(lambda x : x.astype(int).sum())
     dt2 = dt2.reset_index()
-    dt2 = dt2.rename(columns={'Menu Name': 'total', 'index': 'menu'})
+    dt2 = dt2.fillna(method='ffill')
+    
+    dfDate = pd.DataFrame(dt, index=range(len(dt2.values)), columns=range(1))
+    # return dfDate
+    # dt2 = dt2.reset_index()
+    dt2 = dt2.rename(columns={'qty': 'total', 'productName': 'menu'})
     dt2 = pd.concat([dfDate, dt2], axis=1)
     dt2 = dt2.rename(columns={0: 'Date'})
     if i == 0:
       df2 = dt2
     else:
       df2 = pd.concat([df2, dt2], ignore_index=True) #.append(dt2) #pd.concat([df2, dt2], axis=0)
-
   df2 = df2
-  # df2.head()
   return df2
 
 def transformDf(df):
-  listMenu = list(df['menu'].unique())
-  listDate = list(df['Date'].unique())
+  listMenu = df['menu'].unique().tolist()
+  listDate = df['Date'].unique().tolist()
 
-  dfMenu = pd.DataFrame(listMenu)
+  dfMenu = pd.DataFrame(listMenu).rename(columns={0: 'menu'})
   dfDate = pd.DataFrame(0, index=np.arange(len(listMenu)), columns=listDate)
+  
   df2 = pd.concat([dfMenu, dfDate], axis=1)
-  df2 = df2.rename(columns={0: 'menu'}).set_index('menu')
+  df2 = df2.set_index(["menu"])
 
   for column in df2:
     oneDate = df[df['Date'] == column]
     oneDate = oneDate.iloc[:,1:].set_index('menu').T
 
-    oneDateColumn = list(oneDate.columns.values)
+    oneDateColumn = oneDate.columns.values.tolist()
 
     for i_menu, row in df2[column].iteritems():
       if i_menu in oneDateColumn:
         df2.loc[i_menu].at[column] = oneDate.iloc[0][i_menu]
-
+  
   return df2.T
 
 def arimaModel(df2, dPrice):
-  listResult = []
+  listMenu = []
   allPrediction = []
   for column in df2:
     sales_diff = df2[column].diff(periods=1)  # integreted order 1
@@ -92,7 +78,7 @@ def arimaModel(df2, dPrice):
 
     prediction = model_fit.forecast(7)
     try:
-      priceProduct = dPrice.loc[column, 'Price']
+      priceProduct = dPrice.loc[column, 'price']
     except:
       priceProduct = 0
 
@@ -106,24 +92,16 @@ def arimaModel(df2, dPrice):
       "productRevenue"  : int(sum(prediction)*int(priceProduct))
     }
 
-    listResult.append(data)
+    listMenu.append(data)
     allPrediction.append(prediction)
 
   allPrediction = sum(map(np.array, allPrediction))
-  alldata = {
+  dictSales = {
     "menu" : "ALL",
     "predictions" : allPrediction.tolist()
   }
-  filterdata = {
-    "data" : listResult
-  }
 
-  fileName2 = 'models/'+str(date.today())+'dictAll'+'.pkl'
-  fileName1 = 'models/'+str(date.today())+'dictFilter'+'.pkl'
-  pickle.dump(filterdata, open(fileName1,'wb'))
-  pickle.dump(alldata, open(fileName2,'wb'))
-
-  return fileName1, fileName2
+  return dictSales, listMenu
 
 def arimaPredict(df): 
   models = [] 
@@ -165,39 +143,90 @@ def arimaPredict(df):
   pickle.dump(models, open(fileName,'wb'))
   return fileName
 
-def proccessData(pathData):
-  df = readData(pathData)
+def totalsales(dataMenu):
+  df = pd.DataFrame(dataMenu).set_index('menu')
+  total = 0
+  for index, row in df.iterrows():
+    total += sum(row.values.tolist()[0])
+  data = {
+    "totalSales" : int(total)
+  }
+  return data
+
+def totalrevenue(dataMenu):
+  totalRevenue = 0
+  for i in dataMenu:
+    totalRevenue += i["productRevenue"]
+  data = {
+    "totalRevenue" : int(totalRevenue)
+  }
+  return data
+
+def predictionCategory(df, dataMenu):
+  listCategory = df["categoryName"].unique().tolist()
+  dataCategory = []
+  for category in listCategory:
+    dc = df[df["categoryName"] == category]
+    listMenu = dc["productName"].unique().tolist()
+
+    for no, menu in enumerate(listMenu):
+      predMenu = [d for d in dataMenu if d['menu'] == menu][0]["predictions"]
+      if no == 0:
+        sumPredMenu = predMenu
+      else:
+        sumPredMenu = np.sum([sumPredMenu,predMenu], axis=0).tolist()
+
+    dataCategory.append({
+      "category" : category,
+      "predictions" : sumPredMenu
+    })
+  
+  return dataCategory
+
+def processData(df):
   df = coutMenu(df)
   df2 = transformDf(df)
+
   return df2
 
-def callModel(listModels, df, dPrice):
-  if (len(listModels) == 0):
-    dFilt, dAll = arimaModel(df, dPrice) 
-    dPred = arimaPredict(df)
-
-    return dFilt, dAll, dPred
-  elif (listModels[0][:10] != str(date.today())):
-    files = glob.glob('models/*') 
-    for f in files:
-      os.remove(f)
-    dFilt, dAll = arimaModel(df, dPrice) 
-    dPred = arimaPredict(df)
-
-    return dFilt, dAll, dPred
-  else:
-    dAll = 'models/'+str(date.today())+'dictAll'+'.pkl'
-    dFilt = 'models/'+str(date.today())+'dictFilter'+'.pkl'
-    dPred = 'models/'+str(date.today())+'dictPredict'+'.pkl'
-
-    return dFilt, dAll, dPred
-
-def proccessAllData(df):
+def processAllData(df, dfPrice):
+  files = glob.glob('model/*') 
+  for f in files:
+    os.remove(f)
   list_company = df["companyId"].unique()
   for company in list_company:
+    dictCompany = {}
+    
     dfCompany = df[df["companyId"] == company]
+    priceComp = dfPrice[dfPrice["companyId"] == company]
+
     list_store = dfCompany["storeId"].unique()
     for store in list_store:
       dfStore = dfCompany[dfCompany["storeId"] == store]
-      df2 = dfStore[["categoryName", "date", "productName", "qty"]]
-      dfPrice = dfStore[["price"]]
+      priceStore = priceComp[priceComp["storeId"] == store]
+
+      df2 = processData(dfStore[["date", "productName", "qty"]])
+      df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
+
+      dictSales, dataMenu = arimaModel(df2, df3)
+      dataCategory = predictionCategory(dfStore[["categoryName", "productName"]], dataMenu)
+
+      totalSales = totalsales(dataMenu)
+      totalRevenue = totalrevenue(dataMenu)
+
+      dictCompany[store] = {
+        "sales" : dictSales,
+        "dataMenu" : dataMenu,
+        "dataCategory" : dataCategory,
+        "totalSales" : totalSales,
+        "totalRevenue" : totalRevenue
+      }
+
+    fileName = 'model/'+company+'.pkl'
+    pickle.dump(dictCompany, open(fileName,'wb'))
+    
+    
+# dfall, dfPrice = fd.fetchdatabase()
+# processAllData(dfall, dfPrice)
+# d = pickle.load(open('models/aicollective.pkl','rb'))
+# print(d)

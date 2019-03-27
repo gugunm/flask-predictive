@@ -11,8 +11,8 @@ def forecast(fileName1, fileName2):
   dictFilter = pickle.load(open(fileName1,'rb'))
   dictAll = pickle.load(open(fileName2,'rb'))
 
-  jsonall = json.dumps(dictAll)
-  jsonfilter = json.dumps(dictFilter)
+  jsonall = dictAll #json.dumps(dictAll)
+  jsonfilter = dictFilter #json.dumps(dictFilter)
   return jsonfilter, jsonall
 
 def totalsales(p):

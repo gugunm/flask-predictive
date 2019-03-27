@@ -1,0 +1,68 @@
+
+
+{
+    "store1" : 
+    {
+        "sales" : 
+        {
+            "menu": "ALL",
+            "predictions": [130,200,220,119,125,116,118]
+        },
+        "dataMenu" :
+        [
+            {
+                "menu" : "Jaapanese ocha",
+                "predictions": [28, 45, 44, 23, 24, 25, 20],
+                "price": 20000,
+                "productRevenue": 4180000
+            },
+            {
+                "menu" : "Teh Gunung",
+                "predictions": [28, 45, 44, 23, 24, 25, 20],
+                "price": 20000,
+                "productRevenue": 4180000
+            }
+        ],
+        "dataCategory" : 
+        [
+            {
+                "category" : "Drink",
+                "predictions" : [28, 45, 44, 23, 24, 25, 20]
+            }
+        ],
+        "totalSales" : 20000000,
+        "totalRevenue" : 300000000
+    },
+    "store2" :
+    {
+        "sales" : 
+        {
+            "menu": "ALL",
+            "predictions": [130,200,220,119,125,116,118]
+        },
+        "dataMenu" :
+        [
+            {
+                "menu" : "Jaapanese ocha",
+                "predictions": [28, 45, 44, 23, 24, 25, 20],
+                "price": 20000,
+                "productRevenue": 4180000
+            },
+            {
+                "menu" : "Teh Gunung",
+                "predictions": [28, 45, 44, 23, 24, 25, 20],
+                "price": 20000,
+                "productRevenue": 4180000
+            }
+        ],
+        "dataCategory" : 
+        [
+            {
+                "category" : "Drink",
+                "predictions" : [28, 45, 44, 23, 24, 25, 20]
+            }
+        ],
+        "totalSales" : 20000000,
+        "totalRevenue" : 300000000
+    }
+}
