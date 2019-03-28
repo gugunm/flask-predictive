@@ -63,7 +63,7 @@ def arimaModel(df2, dPrice):
     sales_diff = df2[column].diff(periods=1)  # integreted order 1
     sales_diff = sales_diff[1:]
     
-    train = df2[column].values
+    train = sales_diff.values
 
     # ========= S A R I M A X ============
     mod = sm.tsa.statespace.SARIMAX(
@@ -77,6 +77,7 @@ def arimaModel(df2, dPrice):
     # ====================================
 
     prediction = model_fit.forecast(7)
+    
     try:
       priceProduct = dPrice.loc[column, 'price']
     except:
@@ -85,11 +86,14 @@ def arimaModel(df2, dPrice):
     prediction = prediction.tolist()
     prediction = [0 if i < 0 else i for i in prediction]
     prediction = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in prediction]
+    rmse  = arimaPredict(df2[column]) 
+
     data = {
-      "menu"        : column,
-      "predictions" : prediction,
-      "price"       : int(priceProduct),
-      "productRevenue"  : int(sum(prediction)*int(priceProduct))
+      "menu"            : column,
+      "predictions"     : prediction,
+      "price"           : int(priceProduct),
+      "productRevenue"  : int(sum(prediction)*int(priceProduct)),
+      "rmse"            : rmse
     }
 
     listMenu.append(data)
@@ -97,51 +101,35 @@ def arimaModel(df2, dPrice):
 
   allPrediction = sum(map(np.array, allPrediction))
   dictSales = {
-    "menu" : "ALL",
+    "menu"        : "ALL",
     "predictions" : allPrediction.tolist()
   }
 
   return dictSales, listMenu
 
 def arimaPredict(df): 
-  models = [] 
-  df2 = df.iloc[:len(df.index)-7 , :]
-  for column in df2:
-    # print('No. Product : ', column)
-    sales_diff = df2[column].diff(periods=1)  # integreted order 1
-    sales_diff = sales_diff[1:]
-    
-    train = df2[column].values
-    # train = X[0:len(df2[column].values)-7]
+  sales_diff = df.diff(periods=1)  # integreted order 1
+  sd = sales_diff[1:]
 
-    # ========= S A R I M A X ============
-    mod = sm.tsa.statespace.SARIMAX( 
-      train, 
-      order=(0,1,1), # 0,1,0 
-      seasonal_order=(0,1,0,7), # 1,1,0,7 
-      enforce_stationarity=False,
-      enforce_invertibility=False,
-      trend='c')
-    model_fit = mod.fit(disp=0)
-    # ====================================
+  train = sd[:len(sd.values)-7].values.tolist()
+  test  = sd[len(sd.values)-7:].values.tolist()
 
-    prediction = model_fit.predict(start=len(df[column].values)-7, end=len(df[column].values)-1) 
-    rmse = sqrt(mean_squared_error(df[column][len(df[column].values)-7:].values, prediction))
-    if math.isinf(rmse):
-      rmse = 0
+  # ========= S A R I M A X ============
+  mod = sm.tsa.statespace.SARIMAX( 
+    train, 
+    order=(0,1,1), # 0,1,0 
+    seasonal_order=(0,1,0,7), # 1,1,0,7 
+    enforce_stationarity=False,
+    enforce_invertibility=False,
+    trend='c')
+  model_fit = mod.fit(disp=0)
+  # ====================================
 
-    prediction = prediction.tolist()
-    prediction = [0 if i < 0 else i for i in prediction]
-    prediction = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in prediction]
-    data = {
-      "menu"        : column,
-      "prediction"  : prediction,
-      "rmse"        : rmse
-    }
-    models.append(data)
-  fileName = 'models/'+str(date.today())+'dictPredict'+'.pkl'
-  pickle.dump(models, open(fileName,'wb'))
-  return fileName
+  prediction = model_fit.predict(start=len(sd.values)-7, end=len(sd.values)-1) 
+  rmse = sqrt(mean_squared_error(test, prediction))
+  if math.isinf(rmse):
+    rmse = 0
+  return rmse
 
 def totalsales(dataMenu):
   df = pd.DataFrame(dataMenu).set_index('menu')
