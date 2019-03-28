@@ -34,3 +34,4 @@ flask_restful
 statsmodels
 requests
 psycopg2
+joblib

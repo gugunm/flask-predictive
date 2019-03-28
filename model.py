@@ -63,7 +63,8 @@ def arimaModel(df2, dPrice):
     sales_diff = df2[column].diff(periods=1)  # integreted order 1
     sales_diff = sales_diff[1:]
     
-    train = sales_diff.values
+    # train = sales_diff.values
+    train = df2[column].values
 
     # ========= S A R I M A X ============
     mod = sm.tsa.statespace.SARIMAX(
@@ -111,8 +112,10 @@ def arimaPredict(df):
   sales_diff = df.diff(periods=1)  # integreted order 1
   sd = sales_diff[1:]
 
-  train = sd[:len(sd.values)-7].values.tolist()
-  test  = sd[len(sd.values)-7:].values.tolist()
+  # train = sd[:len(sd.values)-7].values.tolist()
+  # test  = sd[len(sd.values)-7:].values.tolist()
+  train = df[:len(df.values)-7].values.tolist()
+  test  = df[len(df.values)-7:].values.tolist()
 
   # ========= S A R I M A X ============
   mod = sm.tsa.statespace.SARIMAX( 
