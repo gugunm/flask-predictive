@@ -1,7 +1,2 @@
-try-api/
 .vscode/
 __pycache__/
-static/
-templates/
-data/
-models/

@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, jsonify
 from flask_restful import Resource, Api
 from datetime import date
 import fetchData as fd
-import predict as pr
 import model as md
 import requests
 import pickle
@@ -12,60 +11,95 @@ import os
 app = Flask(__name__)
 api = Api(app)
 
-pathData = 'data/dataset.csv' 
+folderModel = 'models'
 
-dfall, dfPrice = fd.fetchdatabase()
-# print(type(dfall["companyId"].unique().tolist()))
-# print(dfall.columns)
+# def build_model(boolean):
+    # if boolean == False:
+# dfall, dfPrice = fd.fetchdatabase()
+# md.processAllData(dfall, dfPrice, folderModel)
 
-df = md.proccessData(pathData)
-dPrice = md.getPrice(pathData)
 
-listModels = os.listdir('models/') 
+class AllStore(Resource):
+    def get(self, companyId):
+        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
 
-dictFilterName, dictAllName, dictPredictName = md.callModel(listModels, df, dPrice)
-dataPred, dataAll = pr.forecast(dictFilterName, dictAllName)
+        return jsonify(dc["allstore"])
 
 class Sales(Resource):
-    def get(self, companyId, storeId):
-        # print(companyId, storeId)
-        dictFilterName, dictAllName, dictPredictName = md.callModel(listModels, df, dPrice)
-        dataPred, dataAll = pr.forecast(dictFilterName, dictAllName)
+    def get(self, companyId):
+        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
+        args = request.args.to_dict()
+        
+        if not args:
+            return jsonify({})
         try:
-            if not request.args["menu"]:
+            if not args["storeId"]:
                 return jsonify({})
-            elif request.args["menu"]:
-                arg1 = request.args["menu"]
-                # results = [d for d in data["data"] if arg1 in d['menu'] ]
-                results = [d for d in dataPred["data"] if d['menu'] == arg1 ]
-                if not results:
+            else:
+                if not dc[args["storeId"]]:
                     return jsonify({})
-                return jsonify(results[0])
+                else:
+                    ds = dc[args["storeId"]]
+                    try:
+                        try :
+                            results = [d for d in ds["dataMenu"] if d['menu'] == args["menu"] ]
+                            if not results:
+                                return jsonify({})
+                            return jsonify(results[0])
+                        except:
+                            results = [d for d in ds["dataCategory"] if d['category'] == args["category"] ]
+                            if not results:
+                                return jsonify({})
+                            return jsonify(results[0])
+                    except:
+                        return jsonify(ds["sales"])
         except:
-            return jsonify(dataAll)
+            return jsonify({})
 
 class TotalSales(Resource):
-    def get(self, companyId, storeId):
-        total = pr.totalsales(dataPred)
-        data2 = json.loads(total)
-        return jsonify(data2)
+    def get(self, companyId):
+        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
+        args = request.args.to_dict()
+        
+        if not args:
+            return jsonify({})
+        try:
+            if not args["storeId"]:
+                return jsonify({})
+            else:
+                if not dc[args["storeId"]]:
+                    return jsonify({})
+                else:
+                    ds = dc[args["storeId"]]                  
+                    return jsonify(ds["totalSales"])
+        except:
+            return jsonify({})
 
 class TotalRevenue(Resource):
-    def get(self, companyId, storeId):
-        totalRevenue = pr.totalrevenue(dataPred)
-        data3 = json.loads(totalRevenue)
-        return jsonify(data3)
+    def get(self, companyId):
+        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
+        args = request.args.to_dict()
+        
+        if not args:
+            return jsonify({})
+        try:
+            if not args["storeId"]:
+                return jsonify({})
+            else:
+                if not dc[args["storeId"]]:
+                    return jsonify({})
+                else:
+                    ds = dc[args["storeId"]]                  
+                    return jsonify(ds["totalRevenue"])
+        except:
+            return jsonify({})      
 
-class Predictive(Resource):
-    def get(self, companyId, storeId):
-        marginError = pr.predict(dictPredictName)
-        data4 = json.loads(marginError)
-        return jsonify(data4)
-
-api.add_resource(Sales, '/api/<companyId>/<storeId>/sales')
-api.add_resource(TotalSales, '/api/<companyId>/<storeId>/totalSales')
-api.add_resource(TotalRevenue, '/api/<companyId>/<storeId>/totalRevenue')
-api.add_resource(Predictive, '/api/<companyId>/<storeId>/predictive')
+api.add_resource(AllStore, '/api/<companyId>')
+api.add_resource(Sales, '/api/<companyId>/sales')
+api.add_resource(TotalSales, '/api/<companyId>/totalSales')
+api.add_resource(TotalRevenue, '/api/<companyId>/totalRevenue')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port='8123') 
+    dfall, dfPrice = fd.fetchdatabase()
+    md.processAllData(dfall, dfPrice, folderModel)
+    app.run(debug=True, host='0.0.0.0', port='5003', use_reloader=False) 

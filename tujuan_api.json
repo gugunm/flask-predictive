@@ -1,6 +1,12 @@
 
 
 {
+    "allstore":
+    {
+        "store" : "ALL",
+        "predictions" : [130,200,220,119,125,116,118],
+        "revenue" : 476765876
+    },
     "store1" : 
     {
         "sales" : 
