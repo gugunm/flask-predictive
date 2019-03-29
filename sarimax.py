@@ -1,13 +1,11 @@
 # grid search sarima hyperparameters for monthly mean temp dataset
-from math import sqrt
-from multiprocessing import cpu_count
-from joblib import Parallel
-from joblib import delayed
-from warnings import catch_warnings
-from warnings import filterwarnings
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_squared_error
+from multiprocessing import cpu_count
+from warnings import catch_warnings, filterwarnings
+from joblib import Parallel, delayed
 from pandas import read_csv 
+from math import sqrt, isinf
 
 # one-step sarima forecast
 def sarima_forecast(history, config):
@@ -89,13 +87,13 @@ def grid_search(data, cfg_list, n_test, parallel=True):
 def sarima_configs(seasonal=[0]):
 	models = list()
 	# define config lists
-	p_params = [0, 1, 2]
+	p_params = [0, 1] #, 2]
 	d_params = [0, 1]
-	q_params = [0, 1, 2]
-	t_params = ['n','c','t','ct']
-	P_params = [0, 1, 2]
+	q_params = [0, 1] #, 2]
+	t_params = ['n'] #, 'c', 't', 'ct']
+	P_params = [0, 1] #, 2]
 	D_params = [0, 1]
-	Q_params = [0, 1, 2]
+	Q_params = [0, 1] #, 2]
 	m_params = seasonal
 	# create config instances
 	for p in p_params:
@@ -110,19 +108,26 @@ def sarima_configs(seasonal=[0]):
 									models.append(cfg)
 	return models
 
-if __name__ == '__main__':
+def main(series, n_test):
 	# load dataset
-	series = read_csv('data/monthly-mean-temp.csv', header=0, index_col=0)
 	data = series.values
-	# trim dataset to 5 years
-	data = data[-(5*12):]
-	# data split
-	n_test = 12
 	# model configs
-	cfg_list = sarima_configs(seasonal=[0, 12])
+	cfg_list = sarima_configs(seasonal=[0, n_test])
+	print(len(cfg_list))
 	# grid search
 	scores = grid_search(data, cfg_list, n_test)
-	print('done')
-	# list top 3 configs
-	for cfg, error in scores[:3]:
-		print(cfg, error)
+	# list top 1 configs
+	score = scores[:1][0]
+	cfg, error = score[0], score[1]
+
+	if isinf(error):
+		error = 0
+
+	order = cfg[1:10]
+	p, d, q = order[1], order[4], order[7] 
+
+	sorder = cfg[12:25]
+	P, D, Q, N = sorder[1], sorder[4], sorder[7], sorder[10]
+	t = cfg[27]
+
+	return int(p), int(d), int(q), int(P), int(D), int(Q), int(N), str(t), error

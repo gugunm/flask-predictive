@@ -3,8 +3,8 @@ from flask_restful import Resource, Api
 from datetime import date
 import fetchData as fd
 import model as md
-import warnings
 import requests
+import warnings
 import pickle
 import json
 import os
@@ -100,5 +100,5 @@ api.add_resource(TotalRevenue, '/api/<companyId>/totalRevenue')
 
 if __name__ == '__main__':
     dfall, dfPrice = fd.fetchdatabase()
-    md.processAllData(dfall, dfPrice, folderModel)
-    app.run(debug=True, host='0.0.0.0', port='5003', use_reloader=False) 
+    md.processAllData(dfall, dfPrice, folderModel, 7)
+    app.run(debug=True, host='0.0.0.0', use_reloader=False) 

@@ -5,12 +5,15 @@ import statsmodels.api as sm
 import pandas as pd
 import numpy as np
 import dateutil
+import warnings
 import pickle
 import math
 import glob
 import json
 import os
 import fetchData as fd
+import sarimax
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 def coutMenu(df):
   arr_date = df['date'].unique().tolist()
@@ -56,28 +59,25 @@ def transformDf(df):
   
   return df2.T
 
-def arimaModel(df2, dPrice):
+def arimaModel(df2, dPrice, n_test):
   listMenu = []
   allPrediction = []
   for column in df2:
-    sales_diff = df2[column].diff(periods=1)  # integreted order 1
-    sales_diff = sales_diff[1:]
-    
-    # train = sales_diff.values
     train = df2[column].values
+    p, d, q, P, D, Q, N, t, rmse  = sarimax.main(df2[column], n_test) 
 
     # ========= S A R I M A X ============
     mod = sm.tsa.statespace.SARIMAX(
       train, 
-      order=(0,1,1), # 0,1,0
-      seasonal_order=(0,1,0,7), # 1,1,0,7
+      order = (p,d,q), # 0,1,0
+      seasonal_order = (P,D,Q,N), # 1,1,0,7
       enforce_stationarity=False,
       enforce_invertibility=False,
-      trend='c')
+      trend = t)
     model_fit = mod.fit(maxiter=200, method='nm', disp=0)
     # ====================================
 
-    prediction = model_fit.forecast(7)
+    prediction = model_fit.forecast(n_test)
     
     try:
       priceProduct = dPrice.loc[column, 'price']
@@ -87,7 +87,6 @@ def arimaModel(df2, dPrice):
     prediction = prediction.tolist()
     prediction = [0 if i < 0 else i for i in prediction]
     prediction = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in prediction]
-    rmse  = arimaPredict(df2[column]) 
 
     data = {
       "menu"            : column,
@@ -107,32 +106,6 @@ def arimaModel(df2, dPrice):
   }
 
   return dictSales, listMenu
-
-def arimaPredict(df): 
-  sales_diff = df.diff(periods=1)  # integreted order 1
-  sd = sales_diff[1:]
-
-  # train = sd[:len(sd.values)-7].values.tolist()
-  # test  = sd[len(sd.values)-7:].values.tolist()
-  train = df[:len(df.values)-7].values.tolist()
-  test  = df[len(df.values)-7:].values.tolist()
-
-  # ========= S A R I M A X ============
-  mod = sm.tsa.statespace.SARIMAX( 
-    train, 
-    order=(0,1,1), # 0,1,0 
-    seasonal_order=(0,1,0,7), # 1,1,0,7 
-    enforce_stationarity=False,
-    enforce_invertibility=False,
-    trend='c')
-  model_fit = mod.fit(maxiter=200, method='nm', disp=0)
-  # ====================================
-
-  prediction = model_fit.predict(start=len(sd.values)-7, end=len(sd.values)-1) 
-  rmse = sqrt(mean_squared_error(test, prediction))
-  if math.isinf(rmse):
-    rmse = 0
-  return rmse
 
 def totalsales(dataMenu):
   df = pd.DataFrame(dataMenu).set_index('menu')
@@ -159,9 +132,10 @@ def predictionCategory(df, dataMenu):
   for category in listCategory:
     dc = df[df["categoryName"] == category]
     listMenu = dc["productName"].unique().tolist()
+    menus = [d["menu"] for d in dataMenu]
 
     for no, menu in enumerate(listMenu):
-      predMenu = [d for d in dataMenu if d['menu'] == menu][0]["predictions"]
+      predMenu = [d["predictions"] for d in dataMenu if d['menu'] == menu]#[0]["predictions"]
       if no == 0:
         sumPredMenu = predMenu
       else:
@@ -174,13 +148,15 @@ def predictionCategory(df, dataMenu):
   
   return dataCategory
 
-def processData(df):
+def processData(df, n_product=None):
   df = coutMenu(df)
   df2 = transformDf(df)
 
+  if n_product:
+    return df2.iloc[:,:n_product]
   return df2
 
-def processAllData(df, dfPrice, fModel):
+def processAllData(df, dfPrice, fModel='models', n_test=7, n_product=None):
   files = glob.glob(fModel+'/*') 
   for f in files:
     os.remove(f)
@@ -199,11 +175,16 @@ def processAllData(df, dfPrice, fModel):
       dfStore = dfCompany[dfCompany["storeId"] == store]
       priceStore = priceComp[priceComp["storeId"] == store]
 
-      df2 = processData(dfStore[["date", "productName", "qty"]])
+      # Tentukan berapa produk yang ingin di modelkan
+      df2 = processData(dfStore[["date", "productName", "qty"]], n_product)
       df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
 
-      dictSales, dataMenu = arimaModel(df2, df3)
-      dataCategory = predictionCategory(dfStore[["categoryName", "productName"]], dataMenu)
+      dictSales, dataMenu = arimaModel(df2, df3, n_test)
+      # uncomment 1 baris dibawah untuk save prediksi per category
+      if n_product:
+        dataCategory = ' '
+      else:
+        dataCategory = predictionCategory(dfStore[["categoryName", "productName"]], dataMenu)
 
       totalSales = totalsales(dataMenu)
       totalRevenue = totalrevenue(dataMenu)
@@ -230,10 +211,12 @@ def processAllData(df, dfPrice, fModel):
 
     fileName = fModel+'/'+company+'.pkl'
     pickle.dump(dictCompany, open(fileName,'wb'))
-    
-    
-# dfall, dfPrice = fd.fetchdatabase()
-# processAllData(dfall, dfPrice, 'models')
-# d = pickle.load(open('models/aicollective.pkl','rb'))
-# print(d["allstore"])
 
+
+dfall, dfPrice = fd.fetchdatabase()
+
+# default from n_test is 7
+processAllData(dfall, dfPrice, fModel='models', n_test=10, n_product=1)
+
+d = pickle.load(open('models/aicollective.pkl','rb'))
+print(d)
