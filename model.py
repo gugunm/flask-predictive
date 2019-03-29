@@ -74,7 +74,7 @@ def arimaModel(df2, dPrice):
       enforce_stationarity=False,
       enforce_invertibility=False,
       trend='c')
-    model_fit = mod.fit(disp=0)
+    model_fit = mod.fit(maxiter=200, method='nm', disp=0)
     # ====================================
 
     prediction = model_fit.forecast(7)
@@ -125,7 +125,7 @@ def arimaPredict(df):
     enforce_stationarity=False,
     enforce_invertibility=False,
     trend='c')
-  model_fit = mod.fit(disp=0)
+  model_fit = mod.fit(maxiter=200, method='nm', disp=0)
   # ====================================
 
   prediction = model_fit.predict(start=len(sd.values)-7, end=len(sd.values)-1) 

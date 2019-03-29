@@ -3,21 +3,20 @@ from flask_restful import Resource, Api
 from datetime import date
 import fetchData as fd
 import model as md
+import warnings
 import requests
 import pickle
 import json
 import os
 
+warnings.filterwarnings("ignore", category=FutureWarning)
 app = Flask(__name__)
 api = Api(app)
 
 folderModel = 'models'
 
-# def build_model(boolean):
-    # if boolean == False:
 # dfall, dfPrice = fd.fetchdatabase()
 # md.processAllData(dfall, dfPrice, folderModel)
-
 
 class AllStore(Resource):
     def get(self, companyId):
