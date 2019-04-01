@@ -133,7 +133,6 @@ def predictionCategory(df, dataMenu):
   for category in listCategory:
     dc = df[df["categoryName"] == category]
     listMenu = dc["productName"].unique().tolist()
-    menus = [d["menu"] for d in dataMenu]
 
     for no, menu in enumerate(listMenu):
       predMenu = [d["predictions"] for d in dataMenu if d['menu'] == menu]#[0]["predictions"]
