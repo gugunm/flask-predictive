@@ -1,12 +1,19 @@
 import psycopg2 as p
 import pandas as pd
 
+# DATABASE_NAME = 'postgres'
+# USERNAME      = 'postgres'
+# PASSWORD      = 'arkana'
+# HOSTNAME      = 'localhost'
+# PORT          = '5432'
+
 # DATABASE_NAME = 'customer'
 # USERNAME      = 'postgres'
 # PASSWORD      = 'postgres'
 # HOSTNAME      = 'localhost'
 # PORT          = '5432'
 
+# def fetchdatabase():
 def fetchdatabase(DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postgres', HOSTNAME='localhost', PORT='5432'):
     db = "dbname="+DATABASE_NAME+" user="+USERNAME+" password="+PASSWORD+" host="+HOSTNAME+" port="+PORT
     try:
