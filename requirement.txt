@@ -35,3 +35,4 @@ statsmodels
 requests
 psycopg2
 joblib
+psycopg2-binary

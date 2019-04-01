@@ -96,4 +96,4 @@ api.add_resource(TotalSales, '/api/<companyId>/totalSales')
 api.add_resource(TotalRevenue, '/api/<companyId>/totalRevenue')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', use_reloader=False) 
+    app.run(debug=True, host='0.0.0.0') 

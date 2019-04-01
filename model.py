@@ -219,7 +219,7 @@ if __name__ == '__main__':
   dfall, dfPrice = fd.fetchdatabase()
 
   # default n_test is 7
-  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', n_test=7, n_product=2)
+  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', n_test=7)
 
   # load model and print it
   # d = pickle.load(open('models/aicollective.pkl','rb'))
