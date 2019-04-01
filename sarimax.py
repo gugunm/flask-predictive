@@ -7,16 +7,18 @@ from joblib import Parallel, delayed
 from pandas import read_csv 
 from math import sqrt, isinf
 
+# ===== training model to search best parameter (grid search) =====  
 # one-step sarima forecast
-def sarima_forecast(history, config):
+def sarima_forecast(data_train, config, n_test):
+	# lengthData = len(data_train.values)
 	order, sorder, trend = config
 	# define model
-	model = SARIMAX(history, order=order, seasonal_order=sorder, trend=trend, enforce_stationarity=False, enforce_invertibility=False)
+	model = SARIMAX(data_train, order=order, seasonal_order=sorder, trend=trend, enforce_stationarity=False, enforce_invertibility=False)
 	# fit model
 	model_fit = model.fit(disp=False)
 	# make one step forecast
-	yhat = model_fit.predict(len(history), len(history))
-	return yhat[0]
+	predictions = model_fit.predict(len(data_train)-n_test, len(data_train)-1)
+	return predictions
 
 # root mean squared error or rmse
 def measure_rmse(actual, predicted):
@@ -28,19 +30,11 @@ def train_test_split(data, n_test):
 
 # walk-forward validation for univariate data
 def walk_forward_validation(data, n_test, cfg):
-	predictions = list()
-	# split dataset
-	train, test = train_test_split(data, n_test)
 	# seed history with training dataset
-	history = [x for x in train]
-	# step over each time-step in the test set
-	for i in range(len(test)):
-		# fit model and make forecast for history
-		yhat = sarima_forecast(history, cfg)
-		# store forecast in list of predictions
-		predictions.append(yhat)
-		# add actual observation to history for the next loop
-		history.append(test[i])
+	data_train = [x for x in data]
+	test = data[-n_test:]
+	# fit model and make forecast for history
+	predictions = sarima_forecast(data_train, cfg, n_test)
 	# estimate prediction error
 	error = measure_rmse(test, predictions)
 	return error
@@ -63,8 +57,8 @@ def score_model(data, n_test, cfg, debug=False):
 		except:
 			error = None
 	# check for an interesting result
-	if result is not None:
-		print(' > Model[%s] %.3f' % (key, result))
+	# if result is not None:
+	# 	print(' > Model[%s] %.3f' % (key, result))
 	return (key, result)
 
 # grid search configs
@@ -87,13 +81,13 @@ def grid_search(data, cfg_list, n_test, parallel=True):
 def sarima_configs(seasonal=[0]):
 	models = list()
 	# define config lists
-	p_params = [0, 1] #, 2]
+	p_params = [0, 1, 2]
 	d_params = [0, 1]
-	q_params = [0, 1] #, 2]
-	t_params = ['n'] #, 'c', 't', 'ct']
-	P_params = [0, 1] #, 2]
+	q_params = [0, 1, 2]
+	t_params = ['n', 'c', 't', 'ct']
+	P_params = [0, 1, 2]
 	D_params = [0, 1]
-	Q_params = [0, 1] #, 2]
+	Q_params = [0, 1, 2]
 	m_params = seasonal
 	# create config instances
 	for p in p_params:
@@ -113,9 +107,9 @@ def main(series, n_test):
 	data = series.values
 	# model configs
 	cfg_list = sarima_configs(seasonal=[0, n_test])
-	print(len(cfg_list))
 	# grid search
 	scores = grid_search(data, cfg_list, n_test)
+	print(len(cfg_list))
 	# list top 1 configs
 	score = scores[:1][0]
 	cfg, error = score[0], score[1]

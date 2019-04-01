@@ -63,6 +63,7 @@ def arimaModel(df2, dPrice, n_test):
   listMenu = []
   allPrediction = []
   for column in df2:
+    # print(column)
     train = df2[column].values
     p, d, q, P, D, Q, N, t, rmse  = sarimax.main(df2[column], n_test) 
 
@@ -156,10 +157,10 @@ def processData(df, n_product=None):
     return df2.iloc[:,:n_product]
   return df2
 
-def processAllData(df, dfPrice, fModel='models', n_test=7, n_product=None):
-  files = glob.glob(fModel+'/*') 
-  for f in files:
-    os.remove(f)
+def processAllData(df=None, dfPrice=None, fModel='models', n_test=7, n_product=None):
+  # files = glob.glob(fModel+'/*') 
+  # for f in files:
+  #   os.remove(f)
   list_company = df["companyId"].unique()
   for company in list_company:
     dictCompany = {}
@@ -180,7 +181,7 @@ def processAllData(df, dfPrice, fModel='models', n_test=7, n_product=None):
       df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
 
       dictSales, dataMenu = arimaModel(df2, df3, n_test)
-      # uncomment 1 baris dibawah untuk save prediksi per category
+
       if n_product:
         dataCategory = ' '
       else:
@@ -212,11 +213,14 @@ def processAllData(df, dfPrice, fModel='models', n_test=7, n_product=None):
     fileName = fModel+'/'+company+'.pkl'
     pickle.dump(dictCompany, open(fileName,'wb'))
 
+if __name__ == '__main__':
+  # default parameter for fetchdatabase function
+  # DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postgres', HOSTNAME='localhost', PORT='5432'
+  dfall, dfPrice = fd.fetchdatabase()
 
-dfall, dfPrice = fd.fetchdatabase()
+  # default n_test is 7
+  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', n_test=7, n_product=2)
 
-# default from n_test is 7
-processAllData(dfall, dfPrice, fModel='models', n_test=10, n_product=1)
-
-d = pickle.load(open('models/aicollective.pkl','rb'))
-print(d)
+  # load model and print it
+  # d = pickle.load(open('models/aicollective.pkl','rb'))
+  # print(d)

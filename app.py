@@ -15,9 +15,6 @@ api = Api(app)
 
 folderModel = 'models'
 
-# dfall, dfPrice = fd.fetchdatabase()
-# md.processAllData(dfall, dfPrice, folderModel)
-
 class AllStore(Resource):
     def get(self, companyId):
         dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
@@ -99,6 +96,4 @@ api.add_resource(TotalSales, '/api/<companyId>/totalSales')
 api.add_resource(TotalRevenue, '/api/<companyId>/totalRevenue')
 
 if __name__ == '__main__':
-    dfall, dfPrice = fd.fetchdatabase()
-    md.processAllData(dfall, dfPrice, folderModel, 7)
     app.run(debug=True, host='0.0.0.0', use_reloader=False) 
