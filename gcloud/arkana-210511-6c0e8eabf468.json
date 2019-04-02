@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "arkana-210511",
+  "private_key_id": "6c0e8eabf468dce1578b5c7c384279d09a059359",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCZEtz9TtKsezkQ\nTm21EGVD6zSAhIj570Pnyfi03MCDllXcaMKWYa7SEAz6jBJQlTfDGMA9DQqvXq11\ngIUhbQ/Rd5wMFFACb27Rljr1pkB/jH/KXDwUzB46nVwWhBAdOyqsn4qMO95m6diO\nsCk/U+bd2bezc/6yfbwf6ow2cl4hfR+yvhKmUDdbHW4vEE+5p7z4bRHjmPUNBkTN\n4Kk5kf0D06Z2fHm0VM9Ab+FowD8LLbl4SyE2vt2inkVgCvc2XyCcCGKHDKnd4U2H\nXMNtZbcwpXYhxfMTAV0Fm8/DmdVaRqUBHEU2J8sfMkfItOpHeMuSID0xgfn9Mh2Q\nPSGZZVkTAgMBAAECggEACpFbUV+aOs8tAtuvRkNSAmzgDIlZ3YtvsDZo5a+h2NPN\nrLBM0s3+oED8bGW0M/0BQwZX6z8VwEK0jfqn9kVNxMPRsaHLXkesKmsJOgFWzZd5\nERLqEPOAmMJZY7KNXD9D9HP1QDY35fn5+evehSE5PJK11H1LFa6JiNiMAoxFxGEA\nKFThGZ0VQwwqv0B9SJmkCxokSD8lz9akEHlooM8f+VCgKNSnhosSfL097biOntMC\noO78f0MRDR1UXr8jVhiqefLlgbccoekmghKiBQ9IOftB/1KqSo4nTPD905ioKJiL\n73UEQ2FuyQ5CqnNxELsGshNnhFGgffh3daMzQbngYQKBgQDR8NiHwQXAipTiz+pV\nn9q7Atost+rASmyzK8+fblzXHi1VznzEYTw4aKvH1IOX5QqY27CIFzzxbHjtIOFe\n2Puk4bg3SE4YYxnmpikp/dFvILqYYpu4z3x7RZO+WZmOdDj6n+47qaNa2wtbVMd7\nUEiccl/fwzOQrt5Xa4OAOAnf8wKBgQC6qB87CD9aYBU+ihutX0IQto+Bw7BaVKM/\n7IALR+W/xaXHbAFitJRNL2zQgcrZe/3CJzhvLsCf9WVWqHy8a/yAh9mpsmrPGEix\nlQHqiJliyB4EN5aLjtTPeBnKfCoao1x7GynsN7ELCzNqXI2yoGNWW2kG9nW+6EH7\nuDjqO3gKYQKBgQDG/dnPuzafjPuYjOiZ5l4mGosADgfV4fVsUt+GR856HGFuTr1W\nSrAQ662/SIC+7duAjeOi6xvZ3i403ZChHVxQqZ65z7AuT2jShbbI1Yu5ILWdEQJ3\nRzu/gHCM4VK6gxErBYKDTMTIrozyMcau7KcWmxai+twajJW1GPRZCUTa3wKBgQCQ\nXXfKMJbPT4Ee3bKKZSKzyn8z3iaHtu6Mgl6GWxVXPYb6to5byU7qY8PFgJ1jmIKr\np6n+VCqnjSTT4XyYPu0MfAXdOiFiC2Yt8xGIVB5OSHjuyg+l4NK3pCxOb7og4Dim\n/ltuV6SW5hLeMLdncKVkJU8WE4j+HqTqC5H5mAVAAQKBgC0hDrunXypZ1UNl3cyT\nw+ewTh08PDwdeqDIdQaa4CB43h0mjnEKWRKy+zKsgzIb4mbezCXnyTFK2FDafsSh\nvZ97Z5lb/x6PVebTRH1Uw+FJLMhdxkqo+JhajQ8+Xq2lOM48uocX8IZ6ptuY3R8M\nq57OjItmDGue0v1qwF38v0ky\n-----END PRIVATE KEY-----\n",
+  "client_email": "storage-admin@arkana-210511.iam.gserviceaccount.com",
+  "client_id": "104372056628269723579",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/storage-admin%40arkana-210511.iam.gserviceaccount.com"
+}

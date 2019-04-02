@@ -2,28 +2,26 @@ from flask import Flask, render_template, request, jsonify
 from flask_restful import Resource, Api
 from datetime import date
 import fetchData as fd
-import model as md
 import requests
 import warnings
-import pickle
 import json
 import os
 
-warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore")
 app = Flask(__name__)
-api = Api(app)
+api = Api(app) 
 
 folderModel = 'models'
 
 class AllStore(Resource):
     def get(self, companyId):
-        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
+        dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
 
         return jsonify(dc["allstore"])
 
 class Sales(Resource):
     def get(self, companyId):
-        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
+        dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
         args = request.args.to_dict()
         
         if not args:
@@ -54,7 +52,7 @@ class Sales(Resource):
 
 class TotalSales(Resource):
     def get(self, companyId):
-        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
+        dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
         args = request.args.to_dict()
         
         if not args:
@@ -73,7 +71,7 @@ class TotalSales(Resource):
 
 class TotalRevenue(Resource):
     def get(self, companyId):
-        dc = pickle.load(open(folderModel+'/'+companyId+'.pkl','rb'))
+        dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
         args = request.args.to_dict()
         
         if not args:

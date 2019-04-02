@@ -2,17 +2,17 @@ from sklearn.metrics import mean_squared_error
 from datetime import date
 from math import sqrt
 import statsmodels.api as sm
+import fetchData as fd
 import pandas as pd
 import numpy as np
 import dateutil
 import warnings
-import pickle
+import sarimax
 import math
 import glob
 import json
 import os
-import fetchData as fd
-import sarimax
+
 warnings.filterwarnings("ignore")
 
 def coutMenu(df):
@@ -58,18 +58,20 @@ def transformDf(df):
         df2.loc[i_menu].at[column] = oneDate.iloc[0][i_menu]
   
   return df2.T
-
-def arimaModel(df2, dPrice, n_test):
-  dictConfig = dict()
+'''
+def arimaModel(df2, dPrice, scfg):
   listMenu = list()
   allPrediction = list()
   for column in df2:
-    # print(column)
     train = df2[column].values
-    # gridsearch process to get best parameter for forecasting
-    p, d, q, P, D, Q, N, t, rmse  = sarimax.main(df2[column], n_test) 
-    # save the parameter to the obj 
-    dictConfig[column] = {"p":p, "d":d, "q":q, "P":P, "D":D, "Q":Q, "N":N, "t":t}  
+    # check, is the product axis or no
+    try:
+      # if the product axis, use parameter from the file
+      cfg = scfg[column]
+      p, d, q, P, D, Q, N, t, rmse = cfg["p"], cfg["d"], cfg["q"], cfg["P"], cfg["D"], cfg["Q"], cfg["N"], cfg["t"], cfg["rmse"] # sarimax.main(df2[column], n_test) 
+    except:
+      # if no axis, give the parameter like below
+      p, d, q, P, D, Q, N, t, rmse = 0, 0, 0, 0, 0, 0, cfg["N"], 'c', 0.0
 
     # ========= S A R I M A X ============
     mod = sm.tsa.statespace.SARIMAX(
@@ -82,7 +84,8 @@ def arimaModel(df2, dPrice, n_test):
     model_fit = mod.fit(maxiter=200, method='nm', disp=0)
     # ====================================
 
-    prediction = model_fit.forecast(n_test)
+    # forecast as many as cfg["N"] > seasonal
+    prediction = model_fit.forecast(cfg["N"])
     
     try:
       priceProduct = dPrice.loc[column, 'price']
@@ -110,7 +113,63 @@ def arimaModel(df2, dPrice, n_test):
     "predictions" : allPrediction.tolist()
   }
 
-  return dictSales, listMenu, dictConfig
+  return dictSales, listMenu
+'''
+def arimaModel(df2, dPrice, scfg):
+  listMenu = list()
+  allPrediction = list()
+  for column in df2:
+    train = df2[column].values
+    # check, is the product axis or no
+    try:
+      # if the product axis, use parameter from the file
+      cfg = scfg[column]
+      p, d, q, P, D, Q, N, t, rmse = cfg["p"], cfg["d"], cfg["q"], cfg["P"], cfg["D"], cfg["Q"], 14, cfg["t"], cfg["rmse"] # sarimax.main(df2[column], n_test) 
+    except:
+      # if no axis, give the parameter like below
+      p, d, q, P, D, Q, N, t, rmse = 0, 0, 0, 0, 0, 0, 14, 'c', 0.0
+
+    # ========= S A R I M A X ============
+    mod = sm.tsa.statespace.SARIMAX(
+      train, 
+      order = (p,d,q), # 0,1,0
+      seasonal_order = (P,D,Q,N), # 1,1,0,7
+      enforce_stationarity=False,
+      enforce_invertibility=False,
+      trend = t)
+    model_fit = mod.fit(maxiter=200, method='nm', disp=0)
+    # ====================================
+
+    # forecast as many as cfg["N"] > seasonal
+    prediction = model_fit.forecast(14)
+    
+    try:
+      priceProduct = dPrice.loc[column, 'price']
+    except:
+      priceProduct = 0
+
+    prediction = prediction.tolist()
+    prediction = [0 if i < 0 else i for i in prediction]
+    prediction = [math.floor(i) if i-math.floor(i) < 0.5 else math.ceil(i) for i in prediction]
+
+    data = {
+      "menu"            : column,
+      "predictions"     : prediction,
+      "price"           : int(priceProduct),
+      "productRevenue"  : int(sum(prediction)*int(priceProduct)),
+      "rmse"            : rmse
+    }
+
+    listMenu.append(data)
+    allPrediction.append(prediction)
+
+  allPrediction = sum(map(np.array, allPrediction))
+  dictSales = {
+    "menu"        : "ALL",
+    "predictions" : allPrediction.tolist()
+  }
+
+  return dictSales, listMenu
 
 def totalsales(dataMenu):
   df = pd.DataFrame(dataMenu).set_index('menu')
@@ -160,14 +219,11 @@ def processData(df, n_product=None):
     return df2.iloc[:,:n_product]
   return df2
 
-def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', n_test=7, n_product=None):
-  # files = glob.glob(fModel+'/*') 
-  # for f in files:
-  #   os.remove(f)
+def processAllData(df=None, dfPrice=None, fModel='models', n_product=None):
   list_company = df["companyId"].unique()
   for company in list_company:
+    dictConfigs = json.load(open('configs/'+company+'.json','r'))
     dictCompany = dict()
-    dictConfigs = dict()
     
     dfCompany = df[df["companyId"] == company]
     priceComp = dfPrice[dfPrice["companyId"] == company]
@@ -179,12 +235,13 @@ def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', n
     for store in list_store:
       dfStore = dfCompany[dfCompany["storeId"] == store]
       priceStore = priceComp[priceComp["storeId"] == store]
+      storeConfig= dictConfigs[store]
 
       # Tentukan berapa produk yang ingin di modelkan
       df2 = processData(dfStore[["date", "productName", "qty"]], n_product)
       df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
 
-      dictSales, dataMenu, configStore = arimaModel(df2, df3, n_test)
+      dictSales, dataMenu = arimaModel(df2, df3, storeConfig)
 
       if n_product:
         dataCategory = ' '
@@ -202,9 +259,6 @@ def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', n
         "totalRevenue" : totalRevenue
       }
 
-      # save the store config to the obj
-      dictConfigs[store] = configStore
-
       predCompany.append(dictSales["predictions"])
       revCompany.append(totalRevenue["totalRevenue"])
       
@@ -220,16 +274,16 @@ def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', n
     fileName = fModel+'/'+company+'.json'
     json.dump(dictCompany, open(fileName,'w'))
 
-    fileNameConfigs = fConfigs+'/'+company+'.json'
-    json.dump(dictConfigs, open(fileNameConfigs,'w'))
-
 if __name__ == '__main__':
+  d = json.load(open('models/aicollective.json','r'))
+  print(d)
+
   # default parameter for fetchdatabase function
   # DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postgres', HOSTNAME='localhost', PORT='5432'
   dfall, dfPrice = fd.fetchdatabase()
 
   # default n_test is 7
-  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', n_test=7, n_product=1)
+  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', n_product=2)
 
   # load model and print it
   d = json.load(open('models/aicollective.json','r'))

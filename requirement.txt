@@ -36,3 +36,5 @@ requests
 psycopg2
 joblib
 psycopg2-binary
+google
+google-cloud-storage

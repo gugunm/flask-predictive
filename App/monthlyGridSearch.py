@@ -60,12 +60,16 @@ def transformDf(df):
   return df2.T
 
 def arimaModel(df2, dPrice, n_test):
-  listMenu = []
-  allPrediction = []
+  dictConfig = dict()
+  listMenu = list()
+  allPrediction = list()
   for column in df2:
     # print(column)
     train = df2[column].values
+    # gridsearch process to get best parameter for forecasting
     p, d, q, P, D, Q, N, t, rmse  = sarimax.main(df2[column], n_test) 
+    # save the parameter to the obj 
+    dictConfig[column] = {"p":p, "d":d, "q":q, "P":P, "D":D, "Q":Q, "N":N, "t":t, "rmse":rmse}  
 
     # ========= S A R I M A X ============
     mod = sm.tsa.statespace.SARIMAX(
@@ -106,7 +110,7 @@ def arimaModel(df2, dPrice, n_test):
     "predictions" : allPrediction.tolist()
   }
 
-  return dictSales, listMenu
+  return dictSales, listMenu, dictConfig
 
 def totalsales(dataMenu):
   df = pd.DataFrame(dataMenu).set_index('menu')
@@ -129,7 +133,7 @@ def totalrevenue(dataMenu):
 
 def predictionCategory(df, dataMenu):
   listCategory = df["categoryName"].unique().tolist()
-  dataCategory = []
+  dataCategory = list()
   for category in listCategory:
     dc = df[df["categoryName"] == category]
     listMenu = dc["productName"].unique().tolist()
@@ -156,67 +160,88 @@ def processData(df, n_product=None):
     return df2.iloc[:,:n_product]
   return df2
 
-def processAllData(df=None, dfPrice=None, fModel='models', n_test=7, n_product=None):
+def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', list_ntest=[7], n_product=None):
+  # files = glob.glob(fModel+'/*') 
+  # for f in files:
+  #   os.remove(f)
   list_company = df["companyId"].unique()
   for company in list_company:
-    dictConfigs = json.load(open('configs/'+company+'.json','r'))
-    dictCompany = {}
-    
-    dfCompany = df[df["companyId"] == company]
-    priceComp = dfPrice[dfPrice["companyId"] == company]
+    dictNtest = dict()
+    cfgNtest = dict()
+    for n_test in list_ntest:
+      dictCompany = dict()
+      dictConfigs = dict()
+      
+      dfCompany = df[df["companyId"] == company]
+      priceComp = dfPrice[dfPrice["companyId"] == company]
 
-    list_store = dfCompany["storeId"].unique()
-    predCompany = []
-    revCompany = []
+      list_store = dfCompany["storeId"].unique()
+      predCompany = list()
+      revCompany = list()
 
-    for store in list_store:
-      dfStore = dfCompany[dfCompany["storeId"] == store]
-      priceStore = priceComp[priceComp["storeId"] == store]
+      for store in list_store:
+        dfStore = dfCompany[dfCompany["storeId"] == store]
+        priceStore = priceComp[priceComp["storeId"] == store]
 
-      # Tentukan berapa produk yang ingin di modelkan
-      df2 = processData(dfStore[["date", "productName", "qty"]], n_product)
-      df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
+        # Tentukan berapa produk yang ingin di modelkan
+        df2 = processData(dfStore[["date", "productName", "qty"]], n_product)
+        df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
 
-      dictSales, dataMenu = arimaModel(df2, df3, n_test)
+        dictSales, dataMenu, configStore = arimaModel(df2, df3, n_test)
 
-      if n_product:
-        dataCategory = ' '
-      else:
-        dataCategory = predictionCategory(dfStore[["categoryName", "productName"]], dataMenu)
+        if n_product:
+          dataCategory = ' '
+        else:
+          dataCategory = predictionCategory(dfStore[["categoryName", "productName"]], dataMenu)
 
-      totalSales = totalsales(dataMenu)
-      totalRevenue = totalrevenue(dataMenu)
+        totalSales = totalsales(dataMenu)
+        totalRevenue = totalrevenue(dataMenu)
 
-      dictCompany[store] = {
-        "sales" : dictSales,
-        "dataMenu" : dataMenu,
-        "dataCategory" : dataCategory,
-        "totalSales" : totalSales,
-        "totalRevenue" : totalRevenue
+        dictCompany[store] = {
+          "sales" : dictSales,
+          "dataMenu" : dataMenu,
+          "dataCategory" : dataCategory,
+          "totalSales" : totalSales,
+          "totalRevenue" : totalRevenue
+        }
+
+        # save the store config to the obj
+        dictConfigs[store] = configStore
+
+        predCompany.append(dictSales["predictions"])
+        revCompany.append(totalRevenue["totalRevenue"])
+        
+      predCompany = [sum(x) for x in zip(*predCompany)]
+      revCompany  = sum(revCompany)
+
+      dictCompany["allstore"] = {
+        "store" : "ALL",
+        "predictions" : predCompany,
+        "revenue" : revCompany
       }
 
-      predCompany.append(dictSales["predictions"])
-      revCompany.append(totalRevenue["totalRevenue"])
-      
-    predCompany = [sum(x) for x in zip(*predCompany)]
-    revCompany  = sum(revCompany)
+      nameNtest = 'model'+str(n_test)+'days'
+      dictNtest[nameNtest] = dictCompany
 
-    dictCompany["allstore"] = {
-      "store" : "ALL",
-      "predictions" : predCompany,
-      "revenue" : revCompany
-    }
+      nameCfgTest = 'config'+str(n_test)+'days'
+      cfgNtest[nameCfgTest] = dictConfigs
 
     fileName = fModel+'/'+company+'.json'
-    json.dump(dictCompany, open(fileName,'w'))
+    json.dump(dictNtest, open(fileName,'w'))
+
+    fileNameConfigs = fConfigs+'/'+company+'.json'
+    json.dump(cfgNtest, open(fileNameConfigs,'w'))
 
 if __name__ == '__main__':
   # default parameter for fetchdatabase function
   # DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postgres', HOSTNAME='localhost', PORT='5432'
   dfall, dfPrice = fd.fetchdatabase()
 
-  # default n_test is 7
-  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', n_test=7, n_product=1)
+  # kinds of n_test
+  list_ntest = [3, 7, 14, 21, 30]
+
+  # built prediction using n_test in list_ntest
+  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', list_ntest=list_ntest, n_product=2)
 
   # load model and print it
   d = json.load(open('models/aicollective.json','r'))
