@@ -13,7 +13,7 @@ import json
 import os
 import fetchData as fd
 import sarimax
-warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore")
 
 def coutMenu(df):
   arr_date = df['date'].unique().tolist()
@@ -157,11 +157,9 @@ def processData(df, n_product=None):
   return df2
 
 def processAllData(df=None, dfPrice=None, fModel='models', n_test=7, n_product=None):
-  # files = glob.glob(fModel+'/*') 
-  # for f in files:
-  #   os.remove(f)
   list_company = df["companyId"].unique()
   for company in list_company:
+    dictConfigs = json.load(open('configs/'+company+'.json','r'))
     dictCompany = {}
     
     dfCompany = df[df["companyId"] == company]
@@ -209,8 +207,8 @@ def processAllData(df=None, dfPrice=None, fModel='models', n_test=7, n_product=N
       "revenue" : revCompany
     }
 
-    fileName = fModel+'/'+company+'.pkl'
-    pickle.dump(dictCompany, open(fileName,'wb'))
+    fileName = fModel+'/'+company+'.json'
+    json.dump(dictCompany, open(fileName,'w'))
 
 if __name__ == '__main__':
   # default parameter for fetchdatabase function
@@ -218,8 +216,8 @@ if __name__ == '__main__':
   dfall, dfPrice = fd.fetchdatabase()
 
   # default n_test is 7
-  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', n_test=7)
+  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', n_test=7, n_product=1)
 
   # load model and print it
-  # d = pickle.load(open('models/aicollective.pkl','rb'))
-  # print(d)
+  d = json.load(open('models/aicollective.json','r'))
+  print(d)
