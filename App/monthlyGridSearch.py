@@ -161,14 +161,17 @@ def processData(df, n_product=None):
   return df2
 
 def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', list_ntest=[7], n_product=None):
-  # files = glob.glob(fModel+'/*') 
-  # for f in files:
+  # filesModel  = glob.glob(fModel+'/*')
+  # filesConfig = glob.glob(fConfigs+'/*') 
+  # for i, f in enumerate(filesModel):
   #   os.remove(f)
+  #   os.remove(filesConfig[i])
   list_company = df["companyId"].unique()
   for company in list_company:
     dictNtest = dict()
     cfgNtest = dict()
     for n_test in list_ntest:
+      print("N Test : ", n_test)
       dictCompany = dict()
       dictConfigs = dict()
       
@@ -178,53 +181,55 @@ def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', l
       list_store = dfCompany["storeId"].unique()
       predCompany = list()
       revCompany = list()
+      try:
+        for store in list_store:
+          dfStore = dfCompany[dfCompany["storeId"] == store]
+          priceStore = priceComp[priceComp["storeId"] == store]
 
-      for store in list_store:
-        dfStore = dfCompany[dfCompany["storeId"] == store]
-        priceStore = priceComp[priceComp["storeId"] == store]
+          # Tentukan berapa produk yang ingin di modelkan
+          df2 = processData(dfStore[["date", "productName", "qty"]], n_product)
+          df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
 
-        # Tentukan berapa produk yang ingin di modelkan
-        df2 = processData(dfStore[["date", "productName", "qty"]], n_product)
-        df3 = priceStore[["name", "price"]].rename(columns={"name":"productName"}).set_index("productName")
+          dictSales, dataMenu, configStore = arimaModel(df2, df3, n_test)
 
-        dictSales, dataMenu, configStore = arimaModel(df2, df3, n_test)
+          if n_product:
+            dataCategory = ' '
+          else:
+            dataCategory = predictionCategory(dfStore[["categoryName", "productName"]], dataMenu)
 
-        if n_product:
-          dataCategory = ' '
-        else:
-          dataCategory = predictionCategory(dfStore[["categoryName", "productName"]], dataMenu)
+          totalSales = totalsales(dataMenu)
+          totalRevenue = totalrevenue(dataMenu)
 
-        totalSales = totalsales(dataMenu)
-        totalRevenue = totalrevenue(dataMenu)
+          dictCompany[store] = {
+            "sales" : dictSales,
+            "dataMenu" : dataMenu,
+            "dataCategory" : dataCategory,
+            "totalSales" : totalSales,
+            "totalRevenue" : totalRevenue
+          }
 
-        dictCompany[store] = {
-          "sales" : dictSales,
-          "dataMenu" : dataMenu,
-          "dataCategory" : dataCategory,
-          "totalSales" : totalSales,
-          "totalRevenue" : totalRevenue
+          # save the store config to the obj
+          dictConfigs[store] = configStore
+
+          predCompany.append(dictSales["predictions"])
+          revCompany.append(totalRevenue["totalRevenue"])
+          
+        predCompany = [sum(x) for x in zip(*predCompany)]
+        revCompany  = sum(revCompany)
+
+        dictCompany["allstore"] = {
+          "store" : "ALL",
+          "predictions" : predCompany,
+          "revenue" : revCompany
         }
 
-        # save the store config to the obj
-        dictConfigs[store] = configStore
+        nameNtest = str(n_test)+'daysModel'
+        dictNtest[nameNtest] = dictCompany
 
-        predCompany.append(dictSales["predictions"])
-        revCompany.append(totalRevenue["totalRevenue"])
-        
-      predCompany = [sum(x) for x in zip(*predCompany)]
-      revCompany  = sum(revCompany)
-
-      dictCompany["allstore"] = {
-        "store" : "ALL",
-        "predictions" : predCompany,
-        "revenue" : revCompany
-      }
-
-      nameNtest = 'model'+str(n_test)+'days'
-      dictNtest[nameNtest] = dictCompany
-
-      nameCfgTest = 'config'+str(n_test)+'days'
-      cfgNtest[nameCfgTest] = dictConfigs
+        nameCfgTest = str(n_test)+'daysConfig'
+        cfgNtest[nameCfgTest] = dictConfigs
+      except:
+        continue
 
     fileName = fModel+'/'+company+'.json'
     json.dump(dictNtest, open(fileName,'w'))
@@ -241,7 +246,7 @@ if __name__ == '__main__':
   list_ntest = [3, 7, 14, 21, 30]
 
   # built prediction using n_test in list_ntest
-  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', list_ntest=list_ntest, n_product=2)
+  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', list_ntest=list_ntest)
 
   # load model and print it
   d = json.load(open('models/aicollective.json','r'))

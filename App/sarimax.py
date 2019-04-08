@@ -81,13 +81,13 @@ def grid_search(data, cfg_list, n_test, parallel=True):
 def sarima_configs(seasonal=[0]):
 	models = list()
 	# define config lists
-	p_params = [0] #, 1, 2]
-	d_params = [0] #, 1]
-	q_params = [0] #, 1, 2]
-	t_params = ['c'] #, 'n', 't', 'ct']
-	P_params = [0] #, 1, 2]
-	D_params = [0] #, 1]
-	Q_params = [0] #, 1, 2]
+	p_params = [0, 1, 2]
+	d_params = [0, 1]
+	q_params = [0, 1, 2]
+	t_params = ['c', 't', 'ct']
+	P_params = [0, 1, 2]
+	D_params = [0, 1]
+	Q_params = [0, 1, 2]
 	m_params = seasonal
 	# create config instances
 	for p in p_params:
