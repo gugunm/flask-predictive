@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from flask_restful import Resource, Api
 from datetime import date
-import fetchData as fd
 import requests
 import warnings
 import json
@@ -88,6 +87,7 @@ class TotalRevenue(Resource):
         except:
             return jsonify({})      
 
+# example url http://0.0.0.0:8123/api/aicollective/sales?storeId=id_store & days=7 & menu=Japanese Ocha
 api.add_resource(AllStore, '/api/<companyId>')
 api.add_resource(Sales, '/api/<companyId>/sales')
 api.add_resource(TotalSales, '/api/<companyId>/totalSales')

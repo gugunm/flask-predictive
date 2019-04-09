@@ -11,8 +11,10 @@ import math
 import glob
 import json
 import os
+
 import fetchData as fd
 import sarimax
+
 warnings.filterwarnings("ignore")
 
 def coutMenu(df):
@@ -63,6 +65,7 @@ def arimaModel(df2, dPrice, n_test):
   dictConfig = dict()
   listMenu = list()
   allPrediction = list()
+  # list_column = ['JAPANESE OCHA', 'A8. GOLDEN PORK BELLY EGG', 'B7. TANTAN PORK BELLY', 'B8. TANTAN PORK BELLY EGG', 'C8. KURO PORK BELLY EGG']
   for column in df2:
     # print(column)
     train = df2[column].values
@@ -157,6 +160,7 @@ def processData(df, n_product=None):
   df2 = transformDf(df)
 
   if n_product:
+    # return df2[['JAPANESE OCHA']] #, 'A8. GOLDEN PORK BELLY EGG', 'B7. TANTAN PORK BELLY', 'B8. TANTAN PORK BELLY EGG', 'C8. KURO PORK BELLY EGG']]
     return df2.iloc[:,:n_product]
   return df2
 
@@ -240,14 +244,25 @@ def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', l
 if __name__ == '__main__':
   # default parameter for fetchdatabase function
   # DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postgres', HOSTNAME='localhost', PORT='5432'
+  import time
+  time1 = time.time()
   dfall, dfPrice = fd.fetchdatabase()
 
   # kinds of n_test
-  list_ntest = [3, 7, 14, 21, 30]
+  list_ntest = [7, 3, 7, 14, 21, 30]
 
   # built prediction using n_test in list_ntest
-  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', list_ntest=list_ntest)
+  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', list_ntest=list_ntest, n_product=1)
+
+  time2 = time.time()
 
   # load model and print it
   d = json.load(open('models/aicollective.json','r'))
   print(d)
+
+  print("\n ", time2 - time1)
+
+  # dfall, dfPrice = fd.fetchdatabase()
+  # dfall.to_csv('dfall.csv', index=False)
+  # dfPrice.to_csv('dfPrice.csv', index=False)
+  # print(dfall["date"].unique())

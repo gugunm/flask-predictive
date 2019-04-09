@@ -2,16 +2,17 @@ from sklearn.metrics import mean_squared_error
 from datetime import date
 from math import sqrt
 import statsmodels.api as sm
-import fetchData as fd
 import pandas as pd
 import numpy as np
 import dateutil
 import warnings
-import sarimax
 import math
 import glob
 import json
+import sys
 import os
+
+import fetchData as fd
 
 warnings.filterwarnings("ignore")
 
@@ -269,7 +270,7 @@ if __name__ == '__main__':
   dfall, dfPrice = fd.fetchdatabase()
 
   # take the n_test from file name
-  n_test = int(os.path.basename(__file__)[0])
+  n_test = int(sys.argv[1])
 
   # process all data
   processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', n_test=n_test)
