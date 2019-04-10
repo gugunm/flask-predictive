@@ -264,16 +264,17 @@ def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', n
       fileName = fModel+'/'+company+'.json'
       json.dump(dictModel, open(fileName,'w'))
 
-if __name__ == '__main__':
+def nBuildModel():
   # default parameter for fetchdatabase function
   # DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postgres', HOSTNAME='localhost', PORT='5432'
   dfall, dfPrice = fd.fetchdatabase()
 
-  # take the n_test from file name
-  n_test = int(sys.argv[1])
+  # take the n_test to predict model depands on n_test
+  list_ntest = [3, 7, 14, 21, 30]
 
-  # process all data
-  processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', n_test=n_test)
+  for n_test in list_ntest:
+    # process all data
+    processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', n_test=n_test)
 
   # load model and print it
   # d = json.load(open('models/aicollective.json','r'))

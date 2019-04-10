@@ -241,28 +241,17 @@ def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', l
     fileNameConfigs = fConfigs+'/'+company+'.json'
     json.dump(cfgNtest, open(fileNameConfigs,'w'))
 
-if __name__ == '__main__':
+def gridSearchModel():
   # default parameter for fetchdatabase function
   # DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postgres', HOSTNAME='localhost', PORT='5432'
-  import time
-  time1 = time.time()
   dfall, dfPrice = fd.fetchdatabase()
 
   # kinds of n_test
-  list_ntest = [7, 3, 7, 14, 21, 30]
+  list_ntest = [3, 7, 14, 21, 30]
 
   # built prediction using n_test in list_ntest
   processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', list_ntest=list_ntest, n_product=1)
 
-  time2 = time.time()
-
   # load model and print it
-  d = json.load(open('models/aicollective.json','r'))
-  print(d)
-
-  print("\n ", time2 - time1)
-
-  # dfall, dfPrice = fd.fetchdatabase()
-  # dfall.to_csv('dfall.csv', index=False)
-  # dfPrice.to_csv('dfPrice.csv', index=False)
-  # print(dfall["date"].unique())
+  # d = json.load(open('models/aicollective.json','r'))
+  # print(d)

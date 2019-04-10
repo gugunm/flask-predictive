@@ -15,79 +15,88 @@ folderModel = 'models'
 class AllStore(Resource):
     def get(self, companyId):
         dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
-
-        return jsonify(dc["allstore"])
+        args = request.args.to_dict()
+        dd = dc[str(7)+"daysModel"]
+        try:
+            days = args["days"]
+            dd = dc[days+"daysModel"]
+        except:
+            pass
+        return jsonify(dd["allstore"])
 
 class Sales(Resource):
     def get(self, companyId):
         dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
         args = request.args.to_dict()
-        
-        if not args:
-            return jsonify({})
+        dd = dc[str(7)+"daysModel"]
+        if 'days' in args:
+            try:
+                days = args["days"]
+                dd = dc[days+"daysModel"]
+            except:
+                return jsonify({"message" : "there is no prediction"})
+        else:
+            pass
+
         try:
-            if not args["storeId"]:
-                return jsonify({})
-            else:
-                if not dc[args["storeId"]]:
-                    return jsonify({})
-                else:
-                    ds = dc[args["storeId"]]
-                    try:
-                        try :
-                            results = [d for d in ds["dataMenu"] if d['menu'] == args["menu"] ]
-                            if not results:
-                                return jsonify({})
-                            return jsonify(results[0])
-                        except:
-                            results = [d for d in ds["dataCategory"] if d['category'] == args["category"] ]
-                            if not results:
-                                return jsonify({})
-                            return jsonify(results[0])
-                    except:
-                        return jsonify(ds["sales"])
+            ds = dd[args["storeId"]]
+            try:
+                try :
+                    results = [d for d in ds["dataMenu"] if d['menu'] == args["menu"] ]
+                    if not results:
+                        return jsonify({})
+                    return jsonify(results[0])
+                except:
+                    results = [d for d in ds["dataCategory"] if d['category'] == args["category"] ]
+                    if not results:
+                        return jsonify({})
+                    return jsonify(results[0])
+            except:
+                return jsonify(ds["sales"])
         except:
-            return jsonify({})
+            return jsonify({"message" : "there is no prediction"})
 
 class TotalSales(Resource):
     def get(self, companyId):
         dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
         args = request.args.to_dict()
-        
-        if not args:
-            return jsonify({})
+        dd = dc[str(7)+"daysModel"]
+        if 'days' in args:
+            try:
+                days = args["days"]
+                dd = dc[days+"daysModel"]
+            except:
+                return jsonify({"message" : "there is no prediction"})
+        else:
+            pass
+
         try:
-            if not args["storeId"]:
-                return jsonify({})
-            else:
-                if not dc[args["storeId"]]:
-                    return jsonify({})
-                else:
-                    ds = dc[args["storeId"]]                  
-                    return jsonify(ds["totalSales"])
+            ds = dd[args["storeId"]]                  
+            return jsonify(ds["totalSales"])
         except:
-            return jsonify({})
+            return jsonify({"message" : "there is no prediction"})
 
 class TotalRevenue(Resource):
     def get(self, companyId):
         dc = json.load(open(folderModel+'/'+companyId+'.json','r'))
         args = request.args.to_dict()
-        
-        if not args:
-            return jsonify({})
-        try:
-            if not args["storeId"]:
-                return jsonify({})
-            else:
-                if not dc[args["storeId"]]:
-                    return jsonify({})
-                else:
-                    ds = dc[args["storeId"]]                  
-                    return jsonify(ds["totalRevenue"])
-        except:
-            return jsonify({})      
+        dd = dc[str(7)+"daysModel"]
+        if 'days' in args:
+            try:
+                days = args["days"]
+                dd = dc[days+"daysModel"]
+            except:
+                return jsonify({"message" : "there is no prediction"})
+        else:
+            pass
 
-# example url http://0.0.0.0:8123/api/aicollective/sales?storeId=id_store & days=7 & menu=Japanese Ocha
+        try:
+            ds = dd[args["storeId"]]                  
+            return jsonify(ds["totalRevenue"])
+        except:
+            return jsonify({"message" : "there is no prediction"})
+
+# example url http://0.0.0.0:8123/api/aicollective/sales?storeId=id_store & days=7 & menu=JAPANESE OCHA
 api.add_resource(AllStore, '/api/<companyId>')
 api.add_resource(Sales, '/api/<companyId>/sales')
 api.add_resource(TotalSales, '/api/<companyId>/totalSales')
