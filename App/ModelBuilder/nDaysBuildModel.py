@@ -12,6 +12,7 @@ import json
 import sys
 import os
 
+import gcs_module as gcs 
 import fetchData as fd
 
 warnings.filterwarnings("ignore")
@@ -164,11 +165,17 @@ def processData(df, n_product=None):
     return df2.iloc[:,:n_product]
   return df2
 
-def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', n_test=None, n_product=None):
+def processAllData(df=None, dfPrice=None, fModel='models', fConfigs='configs', n_test=None, n_product=None, i_test=None):
   # take all company name from data
   list_company = df["companyId"].unique()
   # loop for every company
   for company in list_company:
+    if i_test == 0:
+      # Download Model From Cloud
+      gcs.download_blob('analytics.arkana.ai', 'savedmodel/{}.json'.format(company), './models/{}.json'.format(company))
+      # Download Config From Cloud
+      gcs.download_blob('analytics.arkana.ai', 'savedconfig/{}.json'.format(company), './configs/{}.json'.format(company))
+
     # load the configs json of the company to define the cfg deppands on the days
     dictConfigs = json.load(open(fConfigs+'/'+company+'.json','r'))
     # load the model json of the company to update the prediction deppands on the days
@@ -272,9 +279,17 @@ def nBuildModel():
   # take the n_test to predict model depands on n_test
   list_ntest = [3, 7, 14, 21, 30]
 
-  for n_test in list_ntest:
+  for i_test, n_test in enumerate(list_ntest):
     # process all data
-    processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', n_test=n_test)
+    processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', n_test=n_test, i_test=i_test)
+
+  # upload hasil pemodelan terbaru ke google cloud
+  modelFiles = os.listdir('./models/')
+  for model in modelFiles:
+    # upload model to cloud
+    gcs.upload_blob('analytics.arkana.ai', './models/{}'.format(model), 'savedmodel/{}'.format(model))
+    # upload config to cloud, dibarengin for-nya karena nama filenya sama
+    gcs.upload_blob('analytics.arkana.ai', './configs/{}'.format(model), 'savedconfig/{}'.format(model))
 
   # load model and print it
   # d = json.load(open('models/aicollective.json','r'))

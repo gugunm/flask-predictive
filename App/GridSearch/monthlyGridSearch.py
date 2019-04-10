@@ -12,6 +12,7 @@ import glob
 import json
 import os
 
+import gcs_module as gcs 
 import fetchData as fd
 import sarimax
 
@@ -251,6 +252,14 @@ def gridSearchModel():
 
   # built prediction using n_test in list_ntest
   processAllData(df=dfall, dfPrice=dfPrice, fModel='models', fConfigs='configs', list_ntest=list_ntest, n_product=1)
+
+  # upload hasil pemodelan gridsearch ke google cloud
+  modelFiles = os.listdir('./models/')
+  for model in modelFiles:
+    # upload model to cloud
+    gcs.upload_blob('analytics.arkana.ai', './models/{}'.format(model), 'savedmodel/{}'.format(model))
+    # upload config to cloud, dibarengin for-nya karena nama filenya sama
+    gcs.upload_blob('analytics.arkana.ai', './configs/{}'.format(model), 'savedconfig/{}'.format(model))
 
   # load model and print it
   # d = json.load(open('models/aicollective.json','r'))
