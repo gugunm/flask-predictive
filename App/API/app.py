@@ -97,6 +97,7 @@ class TotalRevenue(Resource):
             return jsonify({"message" : "there is no prediction"})
 
 # example url http://0.0.0.0:8123/api/aicollective/sales?storeId=id_store & days=7 & menu=JAPANESE OCHA
+
 api.add_resource(AllStore, '/api/<companyId>')
 api.add_resource(Sales, '/api/<companyId>/sales')
 api.add_resource(TotalSales, '/api/<companyId>/totalSales')

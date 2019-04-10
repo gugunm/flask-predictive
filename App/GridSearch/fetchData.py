@@ -19,7 +19,7 @@ def fetchdatabase(DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postg
     try:
         connection = p.connect(db)
         cursor = connection.cursor() #, t3.name, productname, qty, price \
-        specificDate = 'WHERE t2."date" BETWEEN '+ "'2018-12-03'" + " AND " +"'2019-03-31'"
+        # specificDate = 'WHERE t2."date" BETWEEN '+ "'2018-12-03'" + " AND " +"'2019-03-31'"
         query = 'SELECT t1."companyId", t2."storeId", t2."date", t4."name" AS "categoryName", t3."name" AS "productName", t1."qty", t1."price" \
                     FROM ((("pos-transaction-item" AS t1 \
                         INNER JOIN "pos-transaction" AS t2 \
@@ -27,7 +27,7 @@ def fetchdatabase(DATABASE_NAME='customer', USERNAME='postgres', PASSWORD='postg
                         INNER JOIN "pos-product" AS t3 \
                         ON t1."productId" = t3."id" ) \
                         INNER JOIN "pos-product-category" AS t4 \
-                        ON t3."categoryId" = t4."id") ' + specificDate
+                        ON t3."categoryId" = t4."id") '
         queryPrice = 'SELECT "companyId", "storeId", "name", "price" FROM "pos-product"'
         # cursor.execute(query)
         # rows = cursor.fetchall()
